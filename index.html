@@ -15,7 +15,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <style>
 :root {
   --cream:#faf7f2; --paper:#f3ede3; --ink:#1a1612; --ink-mid:#4a4540;
@@ -34,7 +34,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
 /* ── Background ── */
 #page-bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:#1a1612}
 #page-bg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;filter:saturate(1.3) brightness(0.9) contrast(1.08);transition:opacity 1s}
-#page-bg::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(135deg,rgba(250,247,242,0.62) 0%,rgba(245,237,225,0.48) 50%,rgba(250,247,242,0.58) 100%)}
+#page-bg::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(135deg,rgba(250,247,242,0.42) 0%,rgba(245,237,225,0.28) 50%,rgba(250,247,242,0.38) 100%)}
 
 /* ── Shell ── */
 .shell{display:flex;height:100vh;position:relative;z-index:1;overflow:hidden}
@@ -252,10 +252,10 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
 
   <!-- Sidebar (tablet landscape / desktop) -->
   <nav class="sidebar">
-    <div class="sidebar-logo">
-      <h1>Meal Planner</h1>
-      <span>Our family kitchen</span>
-    </div>
+  <div class="sidebar-logo">
+      <div style="font-family:'Great Vibes',cursive;font-size:32px;line-height:1.15;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.6),0 0 20px rgba(192,98,42,0.4)">Our<br>Family<br>Meals</div>
+      <span style="font-size:10px;color:rgba(255,255,255,0.32);letter-spacing:.09em;text-transform:uppercase;margin-top:4px;display:block">Est. our kitchen</span>
+  </div>
     <div class="nav-section-label">Planning</div>
     <div class="nav-item active" onclick="nav('today')" id="nav-today"><span class="icon">☀</span> Today</div>
     <div class="nav-item" onclick="nav('picks')" id="nav-picks"><span class="icon">🎲</span> Random picks</div>
@@ -493,7 +493,7 @@ function setBg(page){
   bgImg.style.opacity='0';
   const tmp = new Image();
   tmp.referrerPolicy='no-referrer';
-  tmp.onload=()=>{ bgImg.src=url; bgImg.style.opacity='0.60'; };
+  tmp.onload=()=>{ bgImg.src=url; bgImg.style.opacity='0.80'; };
   tmp.onerror=()=>{ bgImg.style.opacity='0'; };
   tmp.src=url;
 }
@@ -559,8 +559,8 @@ function renderToday(){
   document.getElementById('today-hero').innerHTML=`
     <div class="today-hero">
       <div>
-        <div class="label">Today</div>
-        <h2>${label}</h2>
+        <div style="font-family:'Great Vibes',cursive;font-size:42px;line-height:1.1;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.7),0 0 30px rgba(192,98,42,0.5);margin-bottom:6px">Our Family Meals</div>
+        <div class="label">${label}</div>
         ${rec?`<div class="today-meal-name">${rec.name}</div>
           <div style="margin-top:10px"><button class="btn btn-sm" style="background:rgba(255,255,255,0.14);color:#fff;border-color:rgba(255,255,255,0.25)" onclick="openRecipeModal('${rec.id}')">View recipe →</button></div>`
           :`<div class="today-none">No meal chosen yet — pick one below</div>`}
