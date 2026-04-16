@@ -415,6 +415,25 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
   <div class="bottom-nav-item" onclick="openApiKeyModal()" id="bn-settings"><span class="bn-icon" id="bn-settings-icon">⚙</span>AI Key</div>
 </div>
 
+<!-- Cal date picker modal -->
+<div class="modal-bg" id="cal-assign-modal">
+  <div class="modal" style="max-width:340px">
+    <div class="modal-head">
+      <h2>Assign to a date</h2>
+      <button class="modal-close" onclick="closeModal('cal-assign-modal')">✕</button>
+    </div>
+    <p style="font-size:14px;color:var(--ink-mid);margin-bottom:1.25rem;font-weight:500" id="cal-assign-recipe-name"></p>
+    <div class="field">
+      <label>Choose a date</label>
+      <input type="date" id="cal-assign-date" style="font-size:16px;padding:12px">
+    </div>
+    <div class="btns" style="margin-top:.5rem">
+      <button class="btn btn-primary" onclick="confirmCalAssign()">Assign meal</button>
+      <button class="btn btn-ghost" onclick="closeModal('cal-assign-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Recipe modal -->
 <div class="modal-bg" id="recipe-modal">
   <div class="modal">
@@ -429,6 +448,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
     <div class="modal-section" id="m-notes-sec" style="display:none"><div class="modal-section-title">Notes</div><p id="m-notes" style="font-size:14px;color:var(--ink-mid);line-height:1.7;font-weight:500"></p></div>
     <div class="btns" style="margin-top:1.5rem;flex-wrap:wrap">
       <button class="btn btn-green" onclick="assignFromModal()">Use today</button>
+      <button class="btn" onclick="openCalAssignFromModal()" style="border-color:rgba(30,95,168,0.4);color:var(--blue)">Cal</button>
       <button class="btn" onclick="editFromModal()">Edit</button>
       <button class="btn btn-danger" onclick="deleteFromModal()">Delete</button>
     </div>
@@ -576,7 +596,10 @@ function renderTodaySearch(){
   document.getElementById('today-search-results').innerHTML=list.length
     ?list.map(r=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border)">
         <span style="font-size:15px;cursor:pointer;font-family:'Playfair Display',serif;font-weight:600" onclick="openRecipeModal('${r.id}')">${r.name}</span>
-        <button class="btn btn-sm btn-green" onclick="assignToday('${r.id}')">Use today</button>
+        <div class="btns">
+          <button class="btn btn-sm btn-green" onclick="assignToday('${r.id}')">Use today</button>
+          <button class="btn btn-sm" onclick="openCalAssign('${r.id}')" style="border-color:rgba(30,95,168,0.4);color:var(--blue)">Cal</button>
+        </div>
       </div>`).join('')
     :'<p style="font-size:13px;color:var(--ink-light);padding:8px 0">No recipes found</p>';
 }
@@ -602,6 +625,7 @@ function renderPicks(){
       <div class="pick-stars">${starsHtml(r.score,'p-star')}</div>
       <div class="btns">
         <button class="btn btn-sm btn-green" onclick="assignPickToday('${r.id}')">Use today</button>
+        <button class="btn btn-sm" onclick="openCalAssign('${r.id}')" style="border-color:rgba(30,95,168,0.4);color:var(--blue)">Cal</button>
         <button class="btn btn-sm" onclick="openRecipeModal('${r.id}')">View</button>
       </div>
     </div>`).join('');
@@ -744,7 +768,41 @@ function transferScanToForm(){
 }
 function resetScan(){document.getElementById('scan-preview').style.display='none';document.getElementById('scan-result-box').style.display='none';document.getElementById('scan-file').value='';scanData=null;}
 
-// ── Recipe modal ───────────────────────────────────────────────────────────
+// ── Cal assign ─────────────────────────────────────────────────────────────
+let calAssignRecipeId = null;
+function openCalAssign(id){
+  calAssignRecipeId = id;
+  const r = recipes.find(x=>x.id===id);
+  document.getElementById('cal-assign-recipe-name').textContent = r ? r.name : '';
+  // Default to tomorrow
+  const d = new Date();
+  d.setDate(d.getDate()+1);
+  document.getElementById('cal-assign-date').value = d.toISOString().slice(0,10);
+  // Set min to today, max to 1 year ahead
+  document.getElementById('cal-assign-date').min = new Date().toISOString().slice(0,10);
+  const max = new Date(); max.setFullYear(max.getFullYear()+1);
+  document.getElementById('cal-assign-date').max = max.toISOString().slice(0,10);
+  openModal('cal-assign-modal');
+}
+function openCalAssignFromModal(){
+  const id = modalRecipeId;
+  closeModal('recipe-modal');
+  openCalAssign(id);
+}
+function confirmCalAssign(){
+  const date = document.getElementById('cal-assign-date').value;
+  if(!date){ toast('Please choose a date'); return; }
+  if(!calAssignRecipeId){ return; }
+  meals[date] = calAssignRecipeId;
+  persist();
+  closeModal('cal-assign-modal');
+  const r = recipes.find(x=>x.id===calAssignRecipeId);
+  const label = new Date(date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+  toast(`${r?r.name:'Meal'} set for ${label}`);
+  if(currentPage==='calendar') renderCalendar();
+}
+
+
 let modalRecipeId=null;
 function openRecipeModal(id){
   const r=recipes.find(x=>x.id===id);if(!r)return;
