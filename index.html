@@ -15,7 +15,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 
-<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <style>
 :root {
   --cream:#faf7f2; --paper:#f3ede3; --ink:#1a1612; --ink-mid:#4a4540;
@@ -34,7 +34,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
 /* ── Background ── */
 #page-bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:#1a1612}
 #page-bg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;filter:saturate(1.3) brightness(0.9) contrast(1.08);transition:opacity 1s}
-#page-bg::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(135deg,rgba(250,247,242,0.42) 0%,rgba(245,237,225,0.28) 50%,rgba(250,247,242,0.38) 100%)}
+#page-bg::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(135deg,rgba(250,247,242,0.62) 0%,rgba(245,237,225,0.48) 50%,rgba(250,247,242,0.58) 100%)}
 
 /* ── Shell ── */
 .shell{display:flex;height:100vh;position:relative;z-index:1;overflow:hidden}
@@ -172,18 +172,9 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
 .ing-chip button{background:none;border:none;cursor:pointer;color:var(--ink-light);font-size:16px;line-height:1;padding:0}
 
 /* ── Modal ── */
-.modal-bg{
-  visibility:hidden;opacity:0;
-  position:fixed;inset:0;
-  background:rgba(26,22,18,0.6);
-  z-index:500;
-  display:flex;align-items:center;justify-content:center;padding:1rem;
-  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
-  transition:opacity .2s, visibility .2s;
-  -webkit-overflow-scrolling:touch;
-}
-.modal-bg.open{visibility:visible;opacity:1;}
-.modal{background:#fff;border-radius:var(--radius);max-width:600px;width:100%;max-height:85vh;overflow-y:auto;padding:2rem;box-shadow:0 16px 56px rgba(26,22,18,0.25);-webkit-overflow-scrolling:touch;position:relative;z-index:501;}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(26,22,18,0.6);z-index:200;align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:var(--radius);max-width:600px;width:100%;max-height:90vh;overflow-y:auto;padding:2rem;box-shadow:0 16px 56px rgba(26,22,18,0.25);-webkit-overflow-scrolling:touch}
 .modal-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem;gap:1rem}
 .modal-head h2{font-family:'Playfair Display',serif;font-size:24px;font-weight:700;line-height:1.25}
 .modal-close{background:none;border:none;font-size:24px;cursor:pointer;color:var(--ink-light);padding:4px;line-height:1;flex-shrink:0}
@@ -236,26 +227,16 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
 </head>
 <body>
 
-<div id="browser-warning" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(20,16,12,0.97);color:#fff;padding:2rem;flex-direction:column;align-items:center;justify-content:center;text-align:center">
-  <div style="font-size:48px;margin-bottom:1rem">🍽</div>
-  <h2 style="font-family:'Playfair Display',serif;font-size:24px;margin-bottom:1rem">Open in Safari</h2>
-  <p style="font-size:15px;color:rgba(255,255,255,0.7);line-height:1.7;max-width:340px;margin-bottom:1.5rem">
-    This app needs to open in <strong style="color:#fff">Safari</strong> to work properly on your iPad.<br><br>
-    Tap the <strong style="color:#fff">Share button</strong> (box with arrow) at the top of your screen, then tap <strong style="color:#fff">Open in Safari</strong>.
-  </p>
-  <button onclick="document.getElementById('browser-warning').style.display='none'" style="background:var(--accent);color:#fff;border:none;padding:12px 24px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer">I'm already in Safari — dismiss</button>
-</div>
-
 <div id="page-bg"><img id="bg-img" referrerpolicy="no-referrer" crossorigin="anonymous" src="" alt=""></div>
 
 <div class="shell">
 
   <!-- Sidebar (tablet landscape / desktop) -->
   <nav class="sidebar">
-  <div class="sidebar-logo">
-      <div style="font-family:'Great Vibes',cursive;font-size:32px;line-height:1.15;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,0.6),0 0 20px rgba(192,98,42,0.4)">Our<br>Family<br>Meals</div>
-      <span style="font-size:10px;color:rgba(255,255,255,0.32);letter-spacing:.09em;text-transform:uppercase;margin-top:4px;display:block">Est. our kitchen</span>
-  </div>
+    <div class="sidebar-logo">
+      <h1>Meal Planner</h1>
+      <span>Our family kitchen</span>
+    </div>
     <div class="nav-section-label">Planning</div>
     <div class="nav-item active" onclick="nav('today')" id="nav-today"><span class="icon">☀</span> Today</div>
     <div class="nav-item" onclick="nav('picks')" id="nav-picks"><span class="icon">🎲</span> Random picks</div>
@@ -412,26 +393,6 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
   <div class="bottom-nav-item" onclick="nav('recipes')" id="bn-recipes"><span class="bn-icon">📖</span>Recipes</div>
   <div class="bottom-nav-item" onclick="nav('add')" id="bn-add"><span class="bn-icon">＋</span>Add</div>
   <div class="bottom-nav-item" onclick="nav('calendar')" id="bn-calendar"><span class="bn-icon">📅</span>Calendar</div>
-  <div class="bottom-nav-item" onclick="openApiKeyModal()" id="bn-settings"><span class="bn-icon" id="bn-settings-icon">⚙</span>AI Key</div>
-</div>
-
-<!-- Cal date picker modal -->
-<div class="modal-bg" id="cal-assign-modal">
-  <div class="modal" style="max-width:340px">
-    <div class="modal-head">
-      <h2>Assign to a date</h2>
-      <button class="modal-close" onclick="closeModal('cal-assign-modal')">✕</button>
-    </div>
-    <p style="font-size:14px;color:var(--ink-mid);margin-bottom:1.25rem;font-weight:500" id="cal-assign-recipe-name"></p>
-    <div class="field">
-      <label>Choose a date</label>
-      <input type="date" id="cal-assign-date" style="font-size:16px;padding:12px">
-    </div>
-    <div class="btns" style="margin-top:.5rem">
-      <button class="btn btn-primary" onclick="confirmCalAssign()">Assign meal</button>
-      <button class="btn btn-ghost" onclick="closeModal('cal-assign-modal')">Cancel</button>
-    </div>
-  </div>
 </div>
 
 <!-- Recipe modal -->
@@ -448,7 +409,6 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
     <div class="modal-section" id="m-notes-sec" style="display:none"><div class="modal-section-title">Notes</div><p id="m-notes" style="font-size:14px;color:var(--ink-mid);line-height:1.7;font-weight:500"></p></div>
     <div class="btns" style="margin-top:1.5rem;flex-wrap:wrap">
       <button class="btn btn-green" onclick="assignFromModal()">Use today</button>
-      <button class="btn" onclick="openCalAssignFromModal()" style="border-color:rgba(30,95,168,0.4);color:var(--blue)">Cal</button>
       <button class="btn" onclick="editFromModal()">Edit</button>
       <button class="btn btn-danger" onclick="deleteFromModal()">Delete</button>
     </div>
@@ -477,18 +437,6 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Browser check - warn if not Safari on iOS ─────────────────────────────
-(function(){
-  const ua = navigator.userAgent;
-  const isIOS = /iPad|iPhone|iPod/.test(ua);
-  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|OPiOS|mercury|EdgiOS/.test(ua);
-  const isOneDrive = /OneDrive|1drv|SharePoint/.test(ua) || window.location.href.includes('1drv') || window.location.href.includes('onedrive');
-  const isInApp = isOneDrive || (!isSafari && isIOS);
-  if(isInApp){
-    document.getElementById('browser-warning').style.display='flex';
-  }
-})();
-
 // ── PWA Service Worker registration ───────────────────────────────────────
 if('serviceWorker' in navigator){
   window.addEventListener('load', ()=>{
@@ -513,7 +461,7 @@ function setBg(page){
   bgImg.style.opacity='0';
   const tmp = new Image();
   tmp.referrerPolicy='no-referrer';
-  tmp.onload=()=>{ bgImg.src=url; bgImg.style.opacity='0.80'; };
+  tmp.onload=()=>{ bgImg.src=url; bgImg.style.opacity='0.60'; };
   tmp.onerror=()=>{ bgImg.style.opacity='0'; };
   tmp.src=url;
 }
@@ -545,8 +493,6 @@ function updateApiStatus(){
   document.getElementById('api-status-text').textContent=key?'AI scan: ready':'AI scan: not set up';
   const warn=document.getElementById('scan-no-key');
   if(warn) warn.style.display=key?'none':'';
-  const icon=document.getElementById('bn-settings-icon');
-  if(icon) icon.style.color=key?'#4caf50':'';
 }
 function openApiKeyModal(){document.getElementById('apikey-input').value=getApiKey();openModal('apikey-modal');}
 
@@ -579,8 +525,8 @@ function renderToday(){
   document.getElementById('today-hero').innerHTML=`
     <div class="today-hero">
       <div>
-        <div style="font-family:'Great Vibes',cursive;font-size:42px;line-height:1.1;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.7),0 0 30px rgba(192,98,42,0.5);margin-bottom:6px">Our Family Meals</div>
-        <div class="label">${label}</div>
+        <div class="label">Today</div>
+        <h2>${label}</h2>
         ${rec?`<div class="today-meal-name">${rec.name}</div>
           <div style="margin-top:10px"><button class="btn btn-sm" style="background:rgba(255,255,255,0.14);color:#fff;border-color:rgba(255,255,255,0.25)" onclick="openRecipeModal('${rec.id}')">View recipe →</button></div>`
           :`<div class="today-none">No meal chosen yet — pick one below</div>`}
@@ -596,10 +542,7 @@ function renderTodaySearch(){
   document.getElementById('today-search-results').innerHTML=list.length
     ?list.map(r=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border)">
         <span style="font-size:15px;cursor:pointer;font-family:'Playfair Display',serif;font-weight:600" onclick="openRecipeModal('${r.id}')">${r.name}</span>
-        <div class="btns">
-          <button class="btn btn-sm btn-green" onclick="assignToday('${r.id}')">Use today</button>
-          <button class="btn btn-sm" onclick="openCalAssign('${r.id}')" style="border-color:rgba(30,95,168,0.4);color:var(--blue)">Cal</button>
-        </div>
+        <button class="btn btn-sm btn-green" onclick="assignToday('${r.id}')">Use today</button>
       </div>`).join('')
     :'<p style="font-size:13px;color:var(--ink-light);padding:8px 0">No recipes found</p>';
 }
@@ -625,7 +568,6 @@ function renderPicks(){
       <div class="pick-stars">${starsHtml(r.score,'p-star')}</div>
       <div class="btns">
         <button class="btn btn-sm btn-green" onclick="assignPickToday('${r.id}')">Use today</button>
-        <button class="btn btn-sm" onclick="openCalAssign('${r.id}')" style="border-color:rgba(30,95,168,0.4);color:var(--blue)">Cal</button>
         <button class="btn btn-sm" onclick="openRecipeModal('${r.id}')">View</button>
       </div>
     </div>`).join('');
@@ -768,41 +710,7 @@ function transferScanToForm(){
 }
 function resetScan(){document.getElementById('scan-preview').style.display='none';document.getElementById('scan-result-box').style.display='none';document.getElementById('scan-file').value='';scanData=null;}
 
-// ── Cal assign ─────────────────────────────────────────────────────────────
-let calAssignRecipeId = null;
-function openCalAssign(id){
-  calAssignRecipeId = id;
-  const r = recipes.find(x=>x.id===id);
-  document.getElementById('cal-assign-recipe-name').textContent = r ? r.name : '';
-  // Default to tomorrow
-  const d = new Date();
-  d.setDate(d.getDate()+1);
-  document.getElementById('cal-assign-date').value = d.toISOString().slice(0,10);
-  // Set min to today, max to 1 year ahead
-  document.getElementById('cal-assign-date').min = new Date().toISOString().slice(0,10);
-  const max = new Date(); max.setFullYear(max.getFullYear()+1);
-  document.getElementById('cal-assign-date').max = max.toISOString().slice(0,10);
-  openModal('cal-assign-modal');
-}
-function openCalAssignFromModal(){
-  const id = modalRecipeId;
-  closeModal('recipe-modal');
-  openCalAssign(id);
-}
-function confirmCalAssign(){
-  const date = document.getElementById('cal-assign-date').value;
-  if(!date){ toast('Please choose a date'); return; }
-  if(!calAssignRecipeId){ return; }
-  meals[date] = calAssignRecipeId;
-  persist();
-  closeModal('cal-assign-modal');
-  const r = recipes.find(x=>x.id===calAssignRecipeId);
-  const label = new Date(date+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
-  toast(`${r?r.name:'Meal'} set for ${label}`);
-  if(currentPage==='calendar') renderCalendar();
-}
-
-
+// ── Recipe modal ───────────────────────────────────────────────────────────
 let modalRecipeId=null;
 function openRecipeModal(id){
   const r=recipes.find(x=>x.id===id);if(!r)return;
@@ -846,25 +754,9 @@ function deleteFromModal(){
 }
 
 // ── Modals ─────────────────────────────────────────────────────────────────
-function openModal(id){
-  const el=document.getElementById(id);
-  el.classList.add('open');
-  el.style.pointerEvents='auto';
-  document.body.style.overflow='hidden';
-}
-function closeModal(id){
-  const el=document.getElementById(id);
-  el.classList.remove('open');
-  el.style.pointerEvents='none';
-  document.body.style.overflow='';
-}
-// Close on backdrop tap - use touchend for iOS
-document.addEventListener('touchend',function(e){
-  if(e.target.classList.contains('modal-bg')) closeModal(e.target.id);
-},{passive:true});
-document.addEventListener('click',function(e){
-  if(e.target.classList.contains('modal-bg')) closeModal(e.target.id);
-});
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.addEventListener('click',e=>{if(e.target.classList.contains('modal-bg'))closeModal(e.target.id);});
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function starsHtml(score,cls){return[1,2,3,4,5].map(i=>`<span class="${cls}${i<=score?' on':''}">★</span>`).join('');}

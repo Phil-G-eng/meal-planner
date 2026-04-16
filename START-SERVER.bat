@@ -1,8 +1,14 @@
 @echo off
 echo.
 echo  ============================================
-echo   Meal Planner - Local Server (HTTPS)
+echo   Meal Planner - Local Server
 echo  ============================================
+echo.
+echo  Starting server...
+echo  Your Meal Planner will open in your browser.
+echo.
+echo  On your iPad, open Safari and go to:
+echo  (Your IP address will be shown below)
 echo.
 
 :: Get local IP address
@@ -13,42 +19,32 @@ for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4"') do (
 :found
 set IP=%IP: =%
 
-echo  Your Meal Planner address for iPad Safari:
-echo.
-echo     https://%IP%:8443
-echo.
-echo  IMPORTANT - first time only on iPad:
-echo  Safari will warn "not secure" - tap
-echo  Show Details then Visit Website to proceed.
-echo  This is normal for a local network server.
+echo  http://%IP%:8080
 echo.
 echo  Keep this window open while using the app.
-echo  Press Ctrl+C to stop.
+echo  Press Ctrl+C to stop the server.
 echo.
 
-:: Write Caddyfile
-echo {>Caddyfile
-echo     local_certs>>Caddyfile
-echo     auto_https off>>Caddyfile
-echo }>>Caddyfile
-echo.>>Caddyfile
-echo https://0.0.0.0:8443 {>>Caddyfile
-echo     tls internal>>Caddyfile
-echo     root * .>>Caddyfile
-echo     file_server>>Caddyfile
-echo }>>Caddyfile
-
-:: Check caddy is present
-if not exist caddy.exe (
-    echo  ERROR: caddy.exe not found in this folder.
-    echo  Download from: https://caddyserver.com/download
-    echo  Choose: Windows amd64
-    echo  Place caddy.exe in this folder and try again.
-    echo.
-    pause
+:: Try Python 3 first, then Python 2, then PowerShell
+python --version >nul 2>&1
+if %errorlevel% == 0 (
+    echo  Using Python - server running...
+    start "" "http://%IP%:8080"
+    python -m http.server 8080
     goto :end
 )
 
-caddy run --config Caddyfile
+python3 --version >nul 2>&1
+if %errorlevel% == 0 (
+    echo  Using Python3 - server running...
+    start "" "http://%IP%:8080"
+    python3 -m http.server 8080
+    goto :end
+)
+
+:: Fallback: PowerShell built-in server
+echo  Using PowerShell - server running...
+start "" "http://%IP%:8080"
+powershell -Command "& { $listener = [System.Net.HttpListener]::new(); $listener.Prefixes.Add('http://*:8080/'); $listener.Start(); Write-Host ' Server is running. Press Ctrl+C to stop.'; while ($listener.IsListening) { $context = $listener.GetContext(); $path = $context.Request.Url.LocalPath.TrimStart('/'); if ($path -eq '' -or $path -eq '/') { $path = 'index.html' }; $file = Join-Path (Get-Location) $path; if (Test-Path $file) { $bytes = [System.IO.File]::ReadAllBytes($file); $context.Response.ContentLength64 = $bytes.Length; $context.Response.OutputStream.Write($bytes, 0, $bytes.Length) } else { $context.Response.StatusCode = 404 }; $context.Response.Close() } }"
 
 :end
