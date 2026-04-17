@@ -533,14 +533,20 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Wait for supabase global to be ready
 let sb;
 try {
+  // Use memory storage to bypass Edge tracking prevention
+  const memStorage = {
+    _data: {},
+    getItem(key){ return this._data[key] ?? null; },
+    setItem(key, val){ this._data[key] = val; },
+    removeItem(key){ delete this._data[key]; }
+  };
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
-      persistSession: true,
+      storage: memStorage,
+      persistSession: false,
       autoRefreshToken: true,
-      detectSessionInUrl: true
-    },
-    realtime: {
-      params: { eventsPerSecond: 10 }
+      detectSessionInUrl: false,
+      flowType: 'implicit'
     }
   });
   console.log('Supabase client created successfully');
