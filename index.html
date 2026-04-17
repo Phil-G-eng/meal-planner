@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co wss://*.supabase.co https://fonts.googleapis.com https://fonts.gstatic.com https://images.unsplash.com https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co;">
 <title>Our Family Meals</title>
 <link rel="manifest" href="manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
@@ -522,16 +523,30 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
 
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
 <script>
 // ════════════════════════════════════════════════════════════
-// CONFIGURATION — paste your Supabase values here
+// CONFIGURATION
 // ════════════════════════════════════════════════════════════
 const SUPABASE_URL = 'https://tmgvauikkbqbygxfdhbd.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtZ3ZhdWlra2JxYnlneGZkaGJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjcyOTksImV4cCI6MjA5MjAwMzI5OX0.I-SBop_ciSN89oIhO_CkCpTfn1F3ZlmO-1-jtmk6WJQ';
-// ════════════════════════════════════════════════════════════
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Wait for supabase global to be ready
+let sb;
+try {
+  sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    },
+    realtime: {
+      params: { eventsPerSecond: 10 }
+    }
+  });
+  console.log('Supabase client created successfully');
+} catch(e) {
+  console.error('Supabase init error:', e);
+}
 
 // ── Background photos ─────────────────────────────────────
 const PAGE_PHOTOS = {
