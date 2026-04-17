@@ -533,17 +533,24 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Wait for supabase global to be ready
 let sb;
 try {
-  // Use memory storage to bypass Edge tracking prevention
-  const memStorage = {
-    _data: {},
-    getItem(key){ return this._data[key] ?? null; },
-    setItem(key, val){ this._data[key] = val; },
-    removeItem(key){ delete this._data[key]; }
+  // Custom storage using cookies - works in Edge with tracking prevention
+  const cookieStorage = {
+    getItem(key){
+      const match = document.cookie.match(new RegExp('(^| )' + encodeURIComponent(key) + '=([^;]+)'));
+      return match ? decodeURIComponent(match[2]) : null;
+    },
+    setItem(key, val){
+      const expires = new Date(Date.now() + 365*24*60*60*1000).toUTCString();
+      document.cookie = encodeURIComponent(key) + '=' + encodeURIComponent(val) + '; expires=' + expires + '; path=/; SameSite=Lax; Secure';
+    },
+    removeItem(key){
+      document.cookie = encodeURIComponent(key) + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
   };
   sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
-      storage: memStorage,
-      persistSession: false,
+      storage: cookieStorage,
+      persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
       flowType: 'implicit'
@@ -608,38 +615,44 @@ async function doLogin(){
 async function doRegister(){
   const email=document.getElementById('reg-email').value.trim();
   const password=document.getElementById('reg-password').value;
-  const invite=document.getElementById('reg-invite').value.trim();
+  const invite=document.getElementById('reg-invite').value.trim().toLowerCase();
   document.getElementById('reg-err').textContent='';
-  if(!email||!password){ document.getElementById('reg-err').textContent='Please enter email and password'; return; }
-  if(password.length<6){ document.getElementById('reg-err').textContent='Password must be at least 6 characters'; return; }
+  if(!email||!password){document.getElementById('reg-err').textContent='Please enter email and password';return;}
+  if(password.length<6){document.getElementById('reg-err').textContent='Password must be at least 6 characters';return;}
+  document.getElementById('reg-err').style.color='rgba(255,255,255,0.5)';
+  document.getElementById('reg-err').textContent='Creating account…';
   const {data,error}=await sb.auth.signUp({email,password});
-  if(error){ document.getElementById('reg-err').textContent=error.message; return; }
-  // After signup, handle household
-  if(data.user){
-    if(invite){
-      await joinHousehold(data.user.id, invite);
-    } else {
-      await createHousehold(data.user.id);
-    }
-  }
+  if(error){document.getElementById('reg-err').style.color='#ff7070';document.getElementById('reg-err').textContent=error.message;return;}
+  // Store invite code to use after session starts
+  if(invite) localStorage.setItem('mp_pending_invite', invite);
+  document.getElementById('reg-err').textContent='Account created — signing you in…';
 }
 
 async function createHousehold(userId){
-  const {data}=await sb.from('households').insert({name:'Our Family',owner_id:userId}).select().single();
-  if(data){
-    await sb.from('household_members').insert({household_id:data.id,user_id:userId});
+  try {
+    // Insert household
+    const {data:hh,error:hhErr}=await sb.from('households').insert({name:'Our Family',owner_id:userId}).select().single();
+    if(hhErr) throw hhErr;
+    // Link user to household
+    await sb.from('household_members').insert({household_id:hh.id,user_id:userId});
+    return hh.id;
+  } catch(e){
+    console.error('Household creation error:', e);
+    return null;
   }
 }
 
 async function joinHousehold(userId, inviteCode){
-  const {data}=await sb.from('households').select('id').eq('invite_code',inviteCode).single();
-  if(data){
-    await sb.from('household_members').insert({household_id:data.id,user_id:userId});
-  } else {
-    // No matching code — create their own
-    await createHousehold(userId);
-    toast('Invite code not found — created new household');
-  }
+  try {
+    const {data:hh}=await sb.from('households').select('id').ilike('invite_code',inviteCode).single();
+    if(hh){
+      await sb.from('household_members').insert({household_id:hh.id,user_id:userId});
+      return hh.id;
+    }
+  } catch(e){ console.error('Join household error:', e); }
+  // Code not found — create own household
+  toast('Invite code not found — creating new household');
+  return await createHousehold(userId);
 }
 
 async function doSignOut(){
@@ -678,11 +691,24 @@ async function initApp(){
   document.getElementById('user-email-display').textContent=currentUser.email;
   updateApiStatus();
   setBg('today');
-  await loadHousehold();
+
+  // Handle pending invite from registration
+  const pendingInvite = localStorage.getItem('mp_pending_invite');
+  if(pendingInvite){
+    localStorage.removeItem('mp_pending_invite');
+    householdId = await joinHousehold(currentUser.id, pendingInvite);
+  } else {
+    await loadHousehold();
+    // If no household found, create one automatically
+    if(!householdId){
+      toast('Setting up your household…');
+      householdId = await createHousehold(currentUser.id);
+    }
+  }
+
   await loadRecipes();
   await loadMeals();
   renderToday();
-  // Listen for real-time changes from other devices
   setupRealtime();
 }
 
@@ -706,40 +732,43 @@ async function renderHouseholdContent(){
   const el=document.getElementById('household-content');
   el.innerHTML='<p style="color:var(--ink-light);font-size:14px">Loading…</p>';
   try {
-    const {data:hh, error:hhErr}=await sb.from('households').select('*').limit(1).single();
-    const {data:members}=await sb.from('household_members').select('user_id');
-    if(hhErr || !hh) throw new Error('no household');
+    // Try to get household via member link first
+    let hh=null, members=null;
+    if(householdId){
+      const {data:hhData}=await sb.from('households').select('*').eq('id',householdId).single();
+      hh=hhData;
+      const {data:mData}=await sb.from('household_members').select('user_id').eq('household_id',householdId);
+      members=mData;
+    }
+    // Fallback — try any household
+    if(!hh){
+      const {data:hhData}=await sb.from('households').select('*').limit(1).single();
+      hh=hhData;
+      if(hh){
+        const {data:mData}=await sb.from('household_members').select('user_id').eq('household_id',hh.id);
+        members=mData;
+        householdId=hh.id;
+      }
+    }
+    if(!hh) throw new Error('no household');
     el.innerHTML=`
       <div style="margin-bottom:1.25rem">
-        <div class="modal-section-title">Household name</div>
-        <p style="font-size:15px;font-weight:600">${hh.name}</p>
+        <div class="modal-section-title">Household</div>
+        <p style="font-size:16px;font-weight:700">${hh.name}</p>
       </div>
       <div style="margin-bottom:1.25rem">
-        <div class="modal-section-title">Members</div>
-        <p style="font-size:14px;color:var(--ink-mid)">${members?members.length:1} device${members&&members.length!==1?'s':''} connected</p>
+        <div class="modal-section-title">Devices connected</div>
+        <p style="font-size:14px;color:var(--ink-mid);font-weight:500">${members?members.length:1} device${members&&members.length!==1?'s':''}</p>
       </div>
-      <div style="background:var(--paper);border-radius:var(--radius);padding:1rem;margin-bottom:1rem">
+      <div style="background:var(--paper);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem">
         <div class="modal-section-title" style="margin-bottom:.5rem">Invite code</div>
-        <p style="font-size:28px;font-weight:700;letter-spacing:.15em;color:var(--accent)">${hh.invite_code}</p>
-        <p style="font-size:12px;color:var(--ink-light);margin-top:4px">Share this with Jackie when she creates her account</p>
+        <p style="font-size:32px;font-weight:700;letter-spacing:.18em;color:var(--accent);font-family:'Playfair Display',serif">${hh.invite_code}</p>
+        <p style="font-size:12px;color:var(--ink-light);margin-top:6px;line-height:1.5">Share this code with family members.<br>They enter it when creating their account to join your household.</p>
       </div>`;
-  } catch(e) {
-    // Show known values directly while we fix the query
+  } catch(e){
     el.innerHTML=`
-      <div style="margin-bottom:1.25rem">
-        <div class="modal-section-title">Household name</div>
-        <p style="font-size:15px;font-weight:600">Our Family</p>
-      </div>
-      <div style="margin-bottom:1.25rem">
-        <div class="modal-section-title">Members</div>
-        <p style="font-size:14px;color:var(--ink-mid)">1 device connected</p>
-      </div>
-      <div style="background:var(--paper);border-radius:var(--radius);padding:1rem;margin-bottom:1rem">
-        <div class="modal-section-title" style="margin-bottom:.5rem">Invite code</div>
-        <p style="font-size:28px;font-weight:700;letter-spacing:.15em;color:var(--accent)">96383af7</p>
-        <p style="font-size:12px;color:var(--ink-light);margin-top:4px">Share this with Jackie when she creates her account</p>
-      </div>
-      <p style="font-size:11px;color:var(--ink-light)">Note: live member count temporarily unavailable</p>`;
+      <p style="font-size:14px;color:var(--ink-mid);margin-bottom:1rem">Could not load household settings. Please close and try again.</p>
+      <button class="btn btn-primary" onclick="renderHouseholdContent()">Retry</button>`;
   }
 }
 
