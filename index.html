@@ -667,8 +667,13 @@ async function initApp(){
 
 // ── Household ─────────────────────────────────────────────
 async function loadHousehold(){
-  const {data}=await sb.from('household_members').select('household_id').eq('user_id',currentUser.id).single();
+  const {data,error}=await sb.from('household_members').select('household_id').limit(1).single();
   if(data) householdId=data.household_id;
+  else {
+    // Fallback: try direct households query
+    const {data:hh}=await sb.from('households').select('id').limit(1).single();
+    if(hh) householdId=hh.id;
+  }
 }
 
 function openHouseholdModal(){
@@ -679,10 +684,9 @@ function openHouseholdModal(){
 async function renderHouseholdContent(){
   const el=document.getElementById('household-content');
   el.innerHTML='<p style="color:var(--ink-light);font-size:14px">Loading…</p>';
-  if(!householdId){ el.innerHTML='<p>No household found.</p>'; return; }
-  const {data:hh}=await sb.from('households').select('*').eq('id',householdId).single();
-  const {data:members}=await sb.from('household_members').select('user_id').eq('household_id',householdId);
-  if(!hh){ el.innerHTML='<p>Could not load household.</p>'; return; }
+  const {data:hh}=await sb.from('households').select('*').limit(1).single();
+  const {data:members}=await sb.from('household_members').select('user_id');
+  if(!hh){ el.innerHTML='<p style="font-size:14px;color:var(--ink-mid)">Could not load household. Please try again.</p>'; return; }
   el.innerHTML=`
     <div style="margin-bottom:1.25rem">
       <div class="modal-section-title">Household name</div>
@@ -694,10 +698,9 @@ async function renderHouseholdContent(){
     </div>
     <div style="background:var(--paper);border-radius:var(--radius);padding:1rem;margin-bottom:1rem">
       <div class="modal-section-title" style="margin-bottom:.5rem">Invite code</div>
-      <p style="font-size:22px;font-weight:700;letter-spacing:.12em;color:var(--accent)">${hh.invite_code}</p>
-      <p style="font-size:12px;color:var(--ink-light);margin-top:4px">Share this code with family members when they create their account</p>
-    </div>
-  `;
+      <p style="font-size:28px;font-weight:700;letter-spacing:.15em;color:var(--accent)">${hh.invite_code}</p>
+      <p style="font-size:12px;color:var(--ink-light);margin-top:4px">Share this with Jackie when she creates her account</p>
+    </div>`;
 }
 
 // ── Cloud data ────────────────────────────────────────────
