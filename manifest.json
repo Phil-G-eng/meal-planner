@@ -1,8 +1,9 @@
 {
-  "name": "Our Meal Planner",
-  "short_name": "Meals",
+  "name": "Our Family Meals",
+  "short_name": "Family Meals",
   "description": "Family meal planning — recipes, random picks, calendar and AI scanning",
-  "start_url": "/index.html",
+  "start_url": "/meal-planner/index.html",
+  "scope": "/meal-planner/",
   "display": "standalone",
   "background_color": "#1a1612",
   "theme_color": "#c0622a",
