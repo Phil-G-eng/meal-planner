@@ -332,7 +332,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
       <button class="s-btn" onclick="openModal('m-api')">⚙ Configure AI key</button>
       <button class="s-btn" onclick="openHousehold()">🏠 Household settings</button>
       <button class="s-btn" onclick="doSignOut()">↩ Sign out</button>
-      <div style="font-size:10px;color:rgba(255,255,255,.18);margin-top:6px;text-align:center">v12 · Our Family Meals</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.18);margin-top:6px;text-align:center">v13 · Our Family Meals</div>
     </div>
   </nav>
 
@@ -508,7 +508,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
   <div class="mmi" onclick="closeMore();openModal('m-api')"><span class="mic">⚙</span>Configure AI key<span id="mm-adot" style="margin-left:auto;width:7px;height:7px;border-radius:50%;background:#555;flex-shrink:0"></span></div>
   <div class="mmi" onclick="closeMore();openHousehold()"><span class="mic">🏠</span>Household settings</div>
   <div class="mmi" onclick="closeMore();doSignOut()" style="color:rgba(255,120,80,.9)"><span class="mic">↩</span>Sign out</div>
-  <div style="padding:8px 1.5rem;font-size:10px;color:rgba(255,255,255,.2)">v12 · Our Family Meals</div>
+  <div style="padding:8px 1.5rem;font-size:10px;color:rgba(255,255,255,.2)">v13 · Our Family Meals</div>
 </div>
 <div class="bnav" id="bnav" style="display:none">
   <div class="bitem on" onclick="nav('today')" id="bn-today"><span class="bi">☀</span>Today</div>
@@ -841,14 +841,36 @@ async function loadMeals(){
 
 async function upsertRecipe(rec){
   syncOn();
-  await sb.from('recipes').upsert({
+  // Compress photo to max 200KB before storing — prevents hang on large images
+  let photoData = rec.photo||'';
+  if(photoData && photoData.length > 200000){
+    try{ photoData = await compressPhoto(photoData, 800, 0.7); }catch(e){ photoData=''; }
+  }
+  const {error} = await sb.from('recipes').upsert({
     id:rec.id, user_id:user.id,
     name:rec.name, source:rec.source||'', cat:rec.cat||'Main course',
     time:rec.time||'', fav:rec.fav||false, score:rec.score||0,
     ings:rec.ings||[], method:rec.method||'', notes:rec.notes||'',
-    photo:rec.photo||'', created_at:rec.created||Date.now(), updated_at:Date.now()
+    photo:photoData, created_at:rec.created||Date.now(), updated_at:Date.now()
   });
+  if(error) console.error('upsertRecipe error:',error.message);
   syncOff();
+}
+
+function compressPhoto(dataUrl, maxWidth, quality){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const canvas = document.createElement('canvas');
+      let w=img.width, h=img.height;
+      if(w>maxWidth){ h=Math.round(h*maxWidth/w); w=maxWidth; }
+      canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
 }
 
 async function deleteRecipe(id){
@@ -1397,9 +1419,8 @@ function starterRecipes(){return[
   {id:uid(),name:'Salmon en Croûte',source:"Delia's Complete Cookery Course",cat:'Main course',time:'50 mins',fav:false,score:4,ings:['2 salmon fillets','1 sheet puff pastry','100g cream cheese','small bunch dill','zest 1 lemon','1 egg beaten'],method:'Mix cream cheese, dill, lemon zest. Wrap each fillet in pastry with cheese mixture. Seal, egg wash. Bake 25 mins 200°C.',notes:'Serve with new potatoes and green beans.',photo:'',created:Date.now()-864e5*8},
 ];}
 
-// ── Run immediately on load ───────────────────────────────
-// Show API key status right away — doesn't need auth
-updateApiUI();
+// ── Run after DOM ready ───────────────────────────────────
+document.addEventListener('DOMContentLoaded', ()=>{ updateApiUI(); });
 
 // ── PWA service worker ────────────────────────────────────
 if('serviceWorker' in navigator){
