@@ -1,7 +1,7 @@
 // ── Service Worker v7 ──────────────────────────────────────
 // Only caches static shell assets.
 // ALL Supabase data fetches go straight to network — never cached.
-const CACHE = 'family-meals-v7';
+const CACHE = 'family-meals-v8';
 const STATIC = [
   './icon-192.png',
   './icon-512.png',
