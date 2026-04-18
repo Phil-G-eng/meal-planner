@@ -332,7 +332,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
       <button class="s-btn" onclick="openModal('m-api')">⚙ Configure AI key</button>
       <button class="s-btn" onclick="openHousehold()">🏠 Household settings</button>
       <button class="s-btn" onclick="doSignOut()">↩ Sign out</button>
-      <div style="font-size:10px;color:rgba(255,255,255,.18);margin-top:6px;text-align:center">v11 · Our Family Meals</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.18);margin-top:6px;text-align:center">v12 · Our Family Meals</div>
     </div>
   </nav>
 
@@ -508,7 +508,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
   <div class="mmi" onclick="closeMore();openModal('m-api')"><span class="mic">⚙</span>Configure AI key<span id="mm-adot" style="margin-left:auto;width:7px;height:7px;border-radius:50%;background:#555;flex-shrink:0"></span></div>
   <div class="mmi" onclick="closeMore();openHousehold()"><span class="mic">🏠</span>Household settings</div>
   <div class="mmi" onclick="closeMore();doSignOut()" style="color:rgba(255,120,80,.9)"><span class="mic">↩</span>Sign out</div>
-  <div style="padding:8px 1.5rem;font-size:10px;color:rgba(255,255,255,.2)">v11 · Our Family Meals</div>
+  <div style="padding:8px 1.5rem;font-size:10px;color:rgba(255,255,255,.2)">v12 · Our Family Meals</div>
 </div>
 <div class="bnav" id="bnav" style="display:none">
   <div class="bitem on" onclick="nav('today')" id="bn-today"><span class="bi">☀</span>Today</div>
@@ -709,23 +709,29 @@ async function doSignOut(){
 
 async function bootApp(){
   isBooted=true;
-  document.getElementById('auth').style.display='none';
-  document.getElementById('app').style.display='flex';
-  document.getElementById('bnav').style.display='flex';
-  document.getElementById('s-email').textContent=user.email;
-  updateApiUI(); setBg('today');
+  try{
+    document.getElementById('auth').style.display='none';
+    document.getElementById('app').style.display='flex';
+    document.getElementById('bnav').style.display='flex';
+    document.getElementById('s-email').textContent=user.email;
+    updateApiUI(); setBg('today');
 
-  const pendingInv=localStorage.getItem('mp_inv');
-  if(pendingInv){
-    localStorage.removeItem('mp_inv');
-    householdId=await joinHousehold(pendingInv);
-  } else {
-    await loadHousehold();
-    if(!householdId) householdId=await createHousehold();
+    const pendingInv=localStorage.getItem('mp_inv');
+    if(pendingInv){
+      localStorage.removeItem('mp_inv');
+      householdId=await joinHousehold(pendingInv);
+    } else {
+      await loadHousehold();
+      if(!householdId) householdId=await createHousehold();
+    }
+
+    await refreshData();
+    startRealtime();
+  }catch(e){
+    console.error('bootApp error:',e);
+    toast('Error loading app — please refresh');
+    // Don't reset to auth — keep app visible so user can retry
   }
-
-  await refreshData();
-  startRealtime();
 }
 
 async function refreshData(){
@@ -1078,7 +1084,36 @@ function clearForm(){
   document.getElementById('add-title').textContent='Add a recipe';
   formTab('manual');
 }
-async function saveRecipe(){\n  const name=document.getElementById('fn').value.trim();\n  if(!name){toast('Please enter a recipe name');return;}\n  const rec={\n    id:editId||uid(), name,\n    source:document.getElementById('fs').value.trim(),\n    cat:document.getElementById('fc').value,\n    time:document.getElementById('ft').value.trim(),\n    fav:document.getElementById('ffav').checked,\n    score:starVal, ings:[...ingList],\n    method:document.getElementById('fm').value.trim(),\n    notes:document.getElementById('fnotes').value.trim(),\n    photo, created:Date.now()\n  };\n  if(editId){ const i=recipes.findIndex(r=>r.id===editId); if(i>-1) recipes[i]=rec; }\n  else recipes.unshift(rec);\n  await upsertRecipe(rec);\n  const wasEdit=editId;\n  clearForm();\n  // Navigate to recipes and force render\n  page='recipes';\n  document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));\n  document.querySelectorAll('.s-item').forEach(x=>x.classList.remove('on'));\n  document.querySelectorAll('.bitem').forEach(x=>x.classList.remove('on'));\n  document.getElementById('pg-recipes').classList.add('on');\n  const si=document.getElementById('sn-recipes'); if(si) si.classList.add('on');\n  const bi=document.getElementById('bn-recipes'); if(bi) bi.classList.add('on');\n  setBg('recipes');\n  renderRecipes();\n  toast(wasEdit?'Recipe updated!':'Recipe saved!');\n}
+async function saveRecipe(){
+  const name=document.getElementById('fn').value.trim();
+  if(!name){toast('Please enter a recipe name');return;}
+  const rec={
+    id:editId||uid(), name,
+    source:document.getElementById('fs').value.trim(),
+    cat:document.getElementById('fc').value,
+    time:document.getElementById('ft').value.trim(),
+    fav:document.getElementById('ffav').checked,
+    score:starVal, ings:[...ingList],
+    method:document.getElementById('fm').value.trim(),
+    notes:document.getElementById('fnotes').value.trim(),
+    photo, created:Date.now()
+  };
+  if(editId){ const i=recipes.findIndex(r=>r.id===editId); if(i>-1) recipes[i]=rec; }
+  else recipes.unshift(rec);
+  await upsertRecipe(rec);
+  const wasEdit=editId;
+  clearForm();
+  page='recipes';
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.s-item').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.bitem').forEach(x=>x.classList.remove('on'));
+  document.getElementById('pg-recipes').classList.add('on');
+  const si=document.getElementById('sn-recipes'); if(si) si.classList.add('on');
+  const bi=document.getElementById('bn-recipes'); if(bi) bi.classList.add('on');
+  setBg('recipes');
+  renderRecipes();
+  toast(wasEdit?'Recipe updated!':'Recipe saved!');
+}
 
 // ── Scan ──────────────────────────────────────────────────
 function formTab(t){
