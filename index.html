@@ -355,7 +355,15 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
     <div id="page-today" class="page active">
       <div id="today-hero"></div>
       <div class="card">
-        <div class="card-title">Assign a meal to today</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:8px">
+          <div class="card-title" style="margin-bottom:0">Assign a meal to today</div>
+          <select id="today-filter" onchange="renderTodaySearch()" style="padding:6px 10px;border:0.5px solid var(--border-mid);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:13px;background:rgba(255,255,255,0.85);cursor:pointer;outline:none;font-weight:500">
+            <option value="all">All recipes</option>
+            <option value="fav">Favourites only</option>
+            <option value="5">★★★★★ only</option>
+            <option value="4">★★★★ and above</option>
+          </select>
+        </div>
         <div class="search-wrap">
           <span class="search-icon">🔍</span>
           <input type="text" id="today-search" placeholder="Search your recipes…" oninput="renderTodaySearch()">
@@ -366,8 +374,14 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
 
     <div id="page-picks" class="page">
       <div class="page-header"><h2>Random picks</h2><p>5 suggestions — nothing from the last 7 days</p></div>
-      <div class="btns" style="margin-bottom:1.5rem">
+      <div class="btns" style="margin-bottom:1.5rem;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="pickRandom()">🎲 Shuffle again</button>
+        <select id="picks-filter" onchange="pickRandom()" style="padding:9px 12px;border:0.5px solid var(--border-mid);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:14px;background:rgba(255,255,255,0.85);cursor:pointer;outline:none;font-weight:500">
+          <option value="all">All recipes</option>
+          <option value="fav">Favourites only</option>
+          <option value="5">★★★★★ only</option>
+          <option value="4">★★★★ and above</option>
+        </select>
       </div>
       <div id="pick-grid" class="pick-grid"></div>
       <div id="ing-suggest"></div>
@@ -945,7 +959,15 @@ function clearTodayMeal(){
 
 function renderTodaySearch(){
   const q=document.getElementById('today-search').value.toLowerCase();
-  const list=q?recipes.filter(r=>r.name.toLowerCase().includes(q)||r.ings.some(i=>i.toLowerCase().includes(q))):recipes.slice(0,8);
+  const fav=(document.getElementById('today-filter')||{}).value||'all';
+  let list=recipes.filter(r=>{
+    if(fav==='fav'&&!r.fav) return false;
+    if(fav==='5'&&r.score!==5) return false;
+    if(fav==='4'&&r.score<4) return false;
+    if(q&&!r.name.toLowerCase().includes(q)&&!r.ings.some(i=>i.toLowerCase().includes(q))) return false;
+    return true;
+  });
+  if(!q&&fav==='all') list=list.slice(0,8);
   document.getElementById('today-search-results').innerHTML=list.length
     ?list.map(r=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid var(--border)">
         <span style="font-size:15px;cursor:pointer;font-family:'Playfair Display',serif;font-weight:600" onclick="openRecipeModal('${r.id}')">${r.name}</span>
@@ -969,10 +991,18 @@ function assignToday(id){
 // ── Picks ─────────────────────────────────────────────────
 let currentPicks=[];
 function pickRandom(){
+  const fav=(document.getElementById('picks-filter')||{}).value||'all';
   const ago=Date.now()-7*24*60*60*1000;
   const recent=new Set(Object.entries(meals).filter(([d])=>new Date(d).getTime()>ago).map(([,id])=>id));
-  const pool=recipes.filter(r=>!recent.has(r.id));
-  const src=pool.length>=5?pool:recipes;
+  // Apply filter first, then exclude recent
+  let filtered=recipes.filter(r=>{
+    if(fav==='fav'&&!r.fav) return false;
+    if(fav==='5'&&r.score!==5) return false;
+    if(fav==='4'&&r.score<4) return false;
+    return true;
+  });
+  const pool=filtered.filter(r=>!recent.has(r.id));
+  const src=pool.length>=5?pool:filtered.length?filtered:recipes;
   currentPicks=[...src].sort(()=>Math.random()-.5).slice(0,5);
   renderPicks();
 }
