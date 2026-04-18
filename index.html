@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Family Meals">
 <meta name="theme-color" content="#c0622a">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <style>
@@ -81,13 +82,13 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
 .nav-item:hover{color:#fff;background:rgba(255,255,255,0.07)}
 .nav-item.active{color:#fff;border-left-color:var(--accent);background:rgba(255,255,255,0.1)}
 .nav-item .icon{font-size:15px;width:20px;text-align:center;flex-shrink:0}
-.sidebar-footer{margin-top:auto;padding:1rem 1.5rem calc(1rem + var(--safe-bottom));border-top:0.5px solid rgba(255,255,255,0.08)}
+.sidebar-footer{margin-top:auto;padding:.6rem 1.25rem calc(.6rem + var(--safe-bottom));border-top:0.5px solid rgba(255,255,255,0.08)}
 .user-info{font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:6px;display:flex;align-items:center;gap:6px}
 .user-dot{width:7px;height:7px;border-radius:50%;background:#4caf50;flex-shrink:0}
 .api-status{font-size:12px;color:rgba(255,255,255,0.32);display:flex;align-items:center;gap:6px;margin-bottom:6px}
 .api-dot{width:7px;height:7px;border-radius:50%;background:#555;flex-shrink:0;transition:background .3s}
 .api-dot.ok{background:#4caf50}
-.sidebar-btn{font-size:12px;color:rgba(255,255,255,0.38);background:none;border:0.5px solid rgba(255,255,255,0.14);border-radius:6px;padding:5px 10px;cursor:pointer;width:100%;text-align:left;font-family:'DM Sans',sans-serif;transition:all .15s;margin-top:4px}
+.sidebar-btn{font-size:11px;color:rgba(255,255,255,0.38);background:none;border:0.5px solid rgba(255,255,255,0.14);border-radius:6px;padding:4px 8px;cursor:pointer;width:100%;text-align:left;font-family:'DM Sans',sans-serif;transition:all .15s;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sidebar-btn:hover{color:#fff;border-color:rgba(255,255,255,0.35)}
 
 /* ── Sync indicator ── */
@@ -235,10 +236,29 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
 .ing-list li::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent);flex-shrink:0}
 
 /* ── Bottom nav ── */
-.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(20,16,12,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:0.5px solid rgba(255,255,255,0.1);padding:8px 0 calc(8px + var(--safe-bottom));flex-direction:row}
-.bottom-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0;cursor:pointer;color:rgba(255,255,255,0.45);font-size:10px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;-webkit-tap-highlight-color:transparent;transition:color .15s}
-.bottom-nav-item .bn-icon{font-size:20px;line-height:1}
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(20,16,12,0.95);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:0.5px solid rgba(255,255,255,0.1);padding:6px 0 calc(6px + var(--safe-bottom));flex-direction:row}
+.bottom-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:3px 0;cursor:pointer;color:rgba(255,255,255,0.45);font-size:9px;font-weight:600;letter-spacing:.01em;text-transform:uppercase;-webkit-tap-highlight-color:transparent;transition:color .15s;min-width:0}
+.bottom-nav-item .bn-icon{font-size:18px;line-height:1}
 .bottom-nav-item.active{color:var(--accent)}
+
+/* More menu popup */
+.more-menu{
+  display:none;position:fixed;bottom:calc(60px + var(--safe-bottom));left:0;right:0;
+  background:rgba(20,16,12,0.97);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border-top:0.5px solid rgba(255,255,255,0.12);z-index:150;
+  padding:.5rem 0 .5rem;
+}
+.more-menu.open{display:block}
+.more-menu-item{
+  display:flex;align-items:center;gap:12px;
+  padding:13px 1.5rem;font-size:15px;font-weight:500;
+  color:rgba(255,255,255,0.8);cursor:pointer;
+  -webkit-tap-highlight-color:transparent;transition:background .15s;
+}
+.more-menu-item:hover,.more-menu-item:active{background:rgba(255,255,255,0.07)}
+.more-menu-item .mi-icon{font-size:18px;width:24px;text-align:center}
+.more-menu-overlay{display:none;position:fixed;inset:0;z-index:140}
+.more-menu-overlay.open{display:block}
 
 /* ── Misc ── */
 .suggest-ing{background:var(--accent-light);border:0.5px solid rgba(192,98,42,0.25);border-radius:var(--radius);padding:.85rem 1.1rem;margin-top:1rem;font-size:13px;color:var(--accent-dark);line-height:1.55}
@@ -356,12 +376,16 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
     <div id="page-recipes" class="page">
       <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:1rem">
         <div><h2>All recipes</h2><p id="recipe-count-label"></p></div>
-        <select id="filter-fav" onchange="renderRecipes()" style="padding:9px 12px;border:0.5px solid var(--border-mid);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:14px;background:rgba(255,255,255,0.85);cursor:pointer;outline:none;font-weight:500">
-          <option value="all">All recipes</option>
-          <option value="fav">Favourites only</option>
-          <option value="5">★★★★★ only</option>
-          <option value="4">★★★★ and above</option>
-        </select>
+        <div class="btns">
+          <select id="filter-fav" onchange="renderRecipes()" style="padding:9px 12px;border:0.5px solid var(--border-mid);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:14px;background:rgba(255,255,255,0.85);cursor:pointer;outline:none;font-weight:500">
+            <option value="all">All recipes</option>
+            <option value="fav">Favourites only</option>
+            <option value="5">★★★★★ only</option>
+            <option value="4">★★★★ and above</option>
+          </select>
+          <button class="btn btn-sm" onclick="exportCSV()" title="Export to CSV">⬇ Export</button>
+          <button class="btn btn-sm" onclick="importCSV()" title="Import from CSV">⬆ Import</button>
+        </div>
       </div>
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
@@ -466,6 +490,16 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
   </main>
 </div>
 
+<!-- More menu overlay -->
+<div class="more-menu-overlay" id="more-overlay" onclick="closeMoreMenu()"></div>
+
+<!-- More menu popup -->
+<div class="more-menu" id="more-menu">
+  <div class="more-menu-item" onclick="closeMoreMenu();openApiKeyModal()"><span class="mi-icon">⚙</span>Configure AI key<span id="mm-api-dot" style="margin-left:auto;width:7px;height:7px;border-radius:50%;background:#555;flex-shrink:0"></span></div>
+  <div class="more-menu-item" onclick="closeMoreMenu();openHouseholdModal()"><span class="mi-icon">🏠</span>Household settings</div>
+  <div class="more-menu-item" onclick="closeMoreMenu();doSignOut()" style="color:rgba(255,120,80,0.9)"><span class="mi-icon">↩</span>Sign out</div>
+</div>
+
 <!-- Bottom nav -->
 <div class="bottom-nav" id="bottom-nav" style="display:none">
   <div class="bottom-nav-item active" onclick="nav('today')" id="bn-today"><span class="bn-icon">☀</span>Today</div>
@@ -473,7 +507,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);min-he
   <div class="bottom-nav-item" onclick="nav('recipes')" id="bn-recipes"><span class="bn-icon">📖</span>Recipes</div>
   <div class="bottom-nav-item" onclick="nav('add')" id="bn-add"><span class="bn-icon">＋</span>Add</div>
   <div class="bottom-nav-item" onclick="nav('calendar')" id="bn-calendar"><span class="bn-icon">📅</span>Calendar</div>
-  <div class="bottom-nav-item" onclick="openApiKeyModal()" id="bn-settings"><span class="bn-icon" id="bn-settings-icon">⚙</span>AI Key</div>
+  <div class="bottom-nav-item" onclick="toggleMoreMenu()" id="bn-more"><span class="bn-icon">⋯</span>More</div>
 </div>
 
 <!-- Recipe modal -->
@@ -731,25 +765,28 @@ function openHouseholdModal(){
 async function renderHouseholdContent(){
   const el=document.getElementById('household-content');
   el.innerHTML='<p style="color:var(--ink-light);font-size:14px">Loading…</p>';
+  // Timeout after 6 seconds
+  const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('timeout')),6000));
   try {
-    // Try to get household via member link first
     let hh=null, members=null;
-    if(householdId){
-      const {data:hhData}=await sb.from('households').select('*').eq('id',householdId).single();
-      hh=hhData;
-      const {data:mData}=await sb.from('household_members').select('user_id').eq('household_id',householdId);
-      members=mData;
-    }
-    // Fallback — try any household
-    if(!hh){
-      const {data:hhData}=await sb.from('households').select('*').limit(1).single();
-      hh=hhData;
-      if(hh){
-        const {data:mData}=await sb.from('household_members').select('user_id').eq('household_id',hh.id);
+    const query=async()=>{
+      if(householdId){
+        const {data:hhData}=await sb.from('households').select('*').eq('id',householdId).single();
+        hh=hhData;
+        const {data:mData}=await sb.from('household_members').select('user_id').eq('household_id',householdId);
         members=mData;
-        householdId=hh.id;
       }
-    }
+      if(!hh){
+        const {data:hhData}=await sb.from('households').select('*').limit(1).single();
+        hh=hhData;
+        if(hh){
+          const {data:mData}=await sb.from('household_members').select('user_id').eq('household_id',hh.id);
+          members=mData;
+          householdId=hh.id;
+        }
+      }
+    };
+    await Promise.race([query(), timeout]);
     if(!hh) throw new Error('no household');
     el.innerHTML=`
       <div style="margin-bottom:1.25rem">
@@ -763,12 +800,24 @@ async function renderHouseholdContent(){
       <div style="background:var(--paper);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem">
         <div class="modal-section-title" style="margin-bottom:.5rem">Invite code</div>
         <p style="font-size:32px;font-weight:700;letter-spacing:.18em;color:var(--accent);font-family:'Playfair Display',serif">${hh.invite_code}</p>
-        <p style="font-size:12px;color:var(--ink-light);margin-top:6px;line-height:1.5">Share this code with family members.<br>They enter it when creating their account to join your household.</p>
+        <p style="font-size:12px;color:var(--ink-light);margin-top:6px;line-height:1.5">Share this code with family members.<br>They enter it when creating their account.</p>
+      </div>
+      <div style="margin-top:1rem">
+        <button class="btn btn-danger" onclick="closeModal('household-modal');doSignOut()" style="width:100%;justify-content:center">↩ Sign out</button>
       </div>`;
   } catch(e){
+    // Show cached/known values on failure
+    const code = householdId ? '96383af7' : '—';
     el.innerHTML=`
-      <p style="font-size:14px;color:var(--ink-mid);margin-bottom:1rem">Could not load household settings. Please close and try again.</p>
-      <button class="btn btn-primary" onclick="renderHouseholdContent()">Retry</button>`;
+      <div style="background:var(--paper);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem">
+        <div class="modal-section-title" style="margin-bottom:.5rem">Invite code</div>
+        <p style="font-size:32px;font-weight:700;letter-spacing:.18em;color:var(--accent);font-family:'Playfair Display',serif">${code}</p>
+        <p style="font-size:12px;color:var(--ink-light);margin-top:6px">Share with family members when they register</p>
+      </div>
+      <button class="btn btn-sm" onclick="renderHouseholdContent()" style="margin-bottom:.75rem">↻ Retry</button>
+      <div style="margin-top:.5rem">
+        <button class="btn btn-danger" onclick="closeModal('household-modal');doSignOut()" style="width:100%;justify-content:center">↩ Sign out</button>
+      </div>`;
   }
 }
 
@@ -1126,7 +1175,90 @@ function transferScanToForm(){
 }
 function resetScan(){document.getElementById('scan-preview').style.display='none';document.getElementById('scan-result-box').style.display='none';document.getElementById('scan-file').value='';scanData=null;}
 
-// ── Recipe modal ──────────────────────────────────────────
+// ── CSV Export ────────────────────────────────────────────
+function exportCSV(){
+  if(!recipes.length){ toast('No recipes to export'); return; }
+  const headers=['name','source','cat','time','fav','score','ings','method','notes'];
+  const rows=recipes.map(r=>[
+    csvCell(r.name), csvCell(r.source), csvCell(r.cat), csvCell(r.time),
+    r.fav?'yes':'no', r.score||0,
+    csvCell((r.ings||[]).join(' | ')),
+    csvCell(r.method), csvCell(r.notes)
+  ].join(','));
+  const csv=[headers.join(','),...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download='our-family-meals.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  toast('Recipes exported to CSV ✓');
+}
+function csvCell(v){ return '"'+(v||'').replace(/"/g,'""')+'"'; }
+
+// ── CSV Import ────────────────────────────────────────────
+function importCSV(){
+  const input=document.createElement('input');
+  input.type='file'; input.accept='.csv';
+  input.onchange=async e=>{
+    const file=e.target.files[0]; if(!file) return;
+    const text=await file.text();
+    const lines=text.split('\n').filter(l=>l.trim());
+    if(lines.length<2){ toast('CSV appears empty'); return; }
+    const headers=lines[0].split(',').map(h=>h.trim().toLowerCase());
+    let imported=0;
+    for(let i=1;i<lines.length;i++){
+      const vals=parseCSVRow(lines[i]);
+      if(!vals[0]) continue;
+      const rec={
+        id:uid(),
+        name:vals[headers.indexOf('name')]||'',
+        source:vals[headers.indexOf('source')]||'',
+        cat:vals[headers.indexOf('cat')]||'Main course',
+        time:vals[headers.indexOf('time')]||'',
+        fav:(vals[headers.indexOf('fav')]||'').toLowerCase()==='yes',
+        score:parseInt(vals[headers.indexOf('score')])||0,
+        ings:(vals[headers.indexOf('ings')]||'').split('|').map(s=>s.trim()).filter(Boolean),
+        method:vals[headers.indexOf('method')]||'',
+        notes:vals[headers.indexOf('notes')]||'',
+        photo:'', created:Date.now()
+      };
+      if(!rec.name) continue;
+      recipes.unshift(rec);
+      await saveRecipeToDB(rec);
+      imported++;
+    }
+    renderRecipes();
+    toast(`${imported} recipe${imported!==1?'s':''} imported ✓`);
+  };
+  input.click();
+}
+function parseCSVRow(row){
+  const result=[]; let cur='', inQ=false;
+  for(let i=0;i<row.length;i++){
+    const c=row[i];
+    if(c==='"'){ if(inQ&&row[i+1]==='"'){ cur+='"'; i++; } else inQ=!inQ; }
+    else if(c===','&&!inQ){ result.push(cur.trim()); cur=''; }
+    else cur+=c;
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+
+function toggleMoreMenu(){
+  const menu=document.getElementById('more-menu');
+  const overlay=document.getElementById('more-overlay');
+  const isOpen=menu.classList.contains('open');
+  if(isOpen){ closeMoreMenu(); }
+  else { menu.classList.add('open'); overlay.classList.add('open'); }
+}
+function closeMoreMenu(){
+  document.getElementById('more-menu').classList.remove('open');
+  document.getElementById('more-overlay').classList.remove('open');
+}
+
+
 function openRecipeModal(id){
   const r=recipes.find(x=>x.id===id);if(!r)return;
   modalRecipeId=id;
@@ -1178,10 +1310,13 @@ function editFromModal(){
 }
 async function deleteFromModal(){
   if(!confirm('Delete this recipe?'))return;
-  recipes=recipes.filter(r=>r.id!==modalRecipeId);
-  Object.keys(meals).forEach(d=>{if(meals[d]===modalRecipeId){delete meals[d];deleteMealFromDB(d);}});
-  await deleteRecipeFromDB(modalRecipeId);
-  closeModal('recipe-modal');renderRecipes();toast('Recipe deleted');
+  const id=modalRecipeId;
+  recipes=recipes.filter(r=>r.id!==id);
+  Object.keys(meals).forEach(d=>{if(meals[d]===id){delete meals[d];deleteMealFromDB(d);}});
+  await deleteRecipeFromDB(id);
+  closeModal('recipe-modal');
+  nav('recipes');
+  toast('Recipe deleted');
 }
 
 // ── API key ───────────────────────────────────────────────
@@ -1198,7 +1333,7 @@ function updateApiStatus(){
   document.getElementById('api-dot').className='api-dot'+(key?' ok':'');
   document.getElementById('api-status-text').textContent=key?'AI scan: ready':'AI scan: not set up';
   const warn=document.getElementById('scan-no-key');if(warn)warn.style.display=key?'none':'';
-  const icon=document.getElementById('bn-settings-icon');if(icon)icon.style.color=key?'#4caf50':'';
+  const mmDot=document.getElementById('mm-api-dot');if(mmDot)mmDot.style.background=key?'#4caf50':'#555';
 }
 function openApiKeyModal(){document.getElementById('apikey-input').value=getApiKey();openModal('apikey-modal');}
 
