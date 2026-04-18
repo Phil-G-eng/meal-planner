@@ -1435,3 +1435,19 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+<script>
+// ── Visibility refresh — reload data when app comes back into view ──
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState==='visible' && currentUser){
+    loadRecipes().then(()=>{
+      if(currentPage==='recipes') renderRecipes();
+      if(currentPage==='today'){ renderToday(); renderTodaySearch(); }
+      if(currentPage==='picks') pickRandom();
+    });
+    loadMeals().then(()=>{
+      if(currentPage==='calendar') renderCalendar(!!calAssignRecipeId);
+      if(currentPage==='today') renderToday();
+    });
+  }
+});
+</script>
