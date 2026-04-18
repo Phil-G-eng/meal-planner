@@ -332,7 +332,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
       <button class="s-btn" onclick="openModal('m-api')">⚙ Configure AI key</button>
       <button class="s-btn" onclick="openHousehold()">🏠 Household settings</button>
       <button class="s-btn" onclick="doSignOut()">↩ Sign out</button>
-      <div style="font-size:10px;color:rgba(255,255,255,.18);margin-top:6px;text-align:center">v9 · Our Family Meals</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.18);margin-top:6px;text-align:center">v10 · Our Family Meals</div>
     </div>
   </nav>
 
@@ -443,17 +443,29 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
       </div>
       <div id="fp-scan" class="fpanel">
         <div class="card">
-          <p style="font-size:14px;color:var(--ink-mid);margin-bottom:1.25rem;line-height:1.7;font-weight:500">Photograph any recipe page. The AI reads it and fills all fields automatically.</p>
+          <p style="font-size:14px;color:var(--ink-mid);margin-bottom:1.25rem;line-height:1.7;font-weight:500">Photograph each page of the recipe. Add as many pages as needed before scanning.</p>
           <div id="scan-nokey" style="background:var(--accent-light);border:0.5px solid rgba(192,98,42,.3);border-radius:var(--r);padding:1rem;margin-bottom:1rem;font-size:13px;color:var(--accent-dark);font-weight:600;display:none">
             ⚠ AI key not configured. <button class="btn sm" style="margin-left:8px" onclick="openModal('m-api')">Set up now</button>
           </div>
+
+          <!-- Pages added so far -->
+          <div id="scan-pages" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1rem"></div>
+
+          <!-- Drop zone -->
           <div class="sdrop" id="sdrop" onclick="document.getElementById('sfile').click()" ondragover="event.preventDefault();this.classList.add('drag')" ondragleave="this.classList.remove('drag')" ondrop="scanDrop(event)">
             <div class="di">📷</div>
-            <h3>Tap to photograph a recipe</h3>
-            <p>Or drag and drop an image file</p>
+            <h3 id="sdrop-label">Tap to photograph page 1</h3>
+            <p>Add more pages after — then tap Scan</p>
           </div>
-          <input type="file" id="sfile" accept="image/*" capture="environment" style="display:none" onchange="scanFile()">
-          <img id="sprev" class="sprev">
+          <input type="file" id="sfile" accept="image/*" capture="environment" style="display:none" onchange="scanAddPage()">
+
+          <!-- Actions -->
+          <div class="btns" style="margin-bottom:1rem" id="scan-actions" style="display:none">
+            <button class="btn p" onclick="runMultiScan()" id="scan-go-btn">🔍 Scan recipe</button>
+            <button class="btn gh" onclick="document.getElementById('sfile').click()">+ Add page</button>
+            <button class="btn d" onclick="scanReset()">✕ Clear</button>
+          </div>
+
           <div class="sprog" id="sprog">
             <p style="font-size:14px;font-weight:600" id="stxt">Reading your recipe…</p>
             <div class="pb-wrap"><div class="pb" id="spb"></div></div>
@@ -496,7 +508,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
   <div class="mmi" onclick="closeMore();openModal('m-api')"><span class="mic">⚙</span>Configure AI key<span id="mm-adot" style="margin-left:auto;width:7px;height:7px;border-radius:50%;background:#555;flex-shrink:0"></span></div>
   <div class="mmi" onclick="closeMore();openHousehold()"><span class="mic">🏠</span>Household settings</div>
   <div class="mmi" onclick="closeMore();doSignOut()" style="color:rgba(255,120,80,.9)"><span class="mic">↩</span>Sign out</div>
-  <div style="padding:8px 1.5rem;font-size:10px;color:rgba(255,255,255,.2)">v9 · Our Family Meals</div>
+  <div style="padding:8px 1.5rem;font-size:10px;color:rgba(255,255,255,.2)">v10 · Our Family Meals</div>
 </div>
 <div class="bnav" id="bnav" style="display:none">
   <div class="bitem on" onclick="nav('today')" id="bn-today"><span class="bi">☀</span>Today</div>
@@ -1096,34 +1108,88 @@ function formTab(t){
   updateApiUI();
 }
 
-function scanFile(){ const f=document.getElementById('sfile').files[0]; if(f) doScan(f); }
-function scanDrop(e){ e.preventDefault(); document.getElementById('sdrop').classList.remove('drag'); const f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('image/')) doScan(f); }
+// ── Scan — multi-page support ─────────────────────────────
+let scanPages=[]; // array of {dataUrl, thumb}
 
-function doScan(file){
+function scanAddPage(){
+  const f=document.getElementById('sfile').files[0];
+  if(!f) return;
   const r=new FileReader();
-  r.onload=e=>{ document.getElementById('sprev').src=e.target.result; document.getElementById('sprev').style.display='block'; runScan(e.target.result); };
-  r.readAsDataURL(file);
+  r.onload=e=>{
+    scanPages.push(e.target.result);
+    renderScanPages();
+    document.getElementById('sfile').value='';
+  };
+  r.readAsDataURL(f);
 }
 
-async function runScan(dataUrl){
+function scanDrop(e){
+  e.preventDefault();
+  document.getElementById('sdrop').classList.remove('drag');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/')){
+    const r=new FileReader();
+    r.onload=ev=>{ scanPages.push(ev.target.result); renderScanPages(); };
+    r.readAsDataURL(f);
+  }
+}
+
+function renderScanPages(){
+  const container=document.getElementById('scan-pages');
+  const actions=document.getElementById('scan-actions');
+  const label=document.getElementById('sdrop-label');
+  container.innerHTML=scanPages.map((d,i)=>`
+    <div style="position:relative;display:inline-block">
+      <img src="${d}" style="height:80px;border-radius:8px;border:0.5px solid var(--border);object-fit:cover;width:60px">
+      <button onclick="removeScanPage(${i})" style="position:absolute;top:-6px;right:-6px;background:var(--accent);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>
+      <div style="font-size:9px;text-align:center;color:var(--ink-light);margin-top:2px">Page ${i+1}</div>
+    </div>`).join('');
+  if(scanPages.length>0){
+    actions.style.display='flex';
+    label.textContent=`Page ${scanPages.length} added — tap to add more`;
+    document.getElementById('scan-go-btn').textContent=`🔍 Scan ${scanPages.length} page${scanPages.length>1?'s':''}`;
+  } else {
+    actions.style.display='none';
+    label.textContent='Tap to photograph page 1';
+  }
+}
+
+function removeScanPage(i){ scanPages.splice(i,1); renderScanPages(); }
+
+async function runMultiScan(){
   const key=getApiKey();
   if(!key){toast('Please set your API key first');openModal('m-api');return;}
+  if(!scanPages.length){toast('Please add at least one page photo');return;}
+
   const prog=document.getElementById('sprog'), pb=document.getElementById('spb');
   document.getElementById('sres').style.display='none';
   prog.style.display='block'; pb.style.width='0';
-  document.getElementById('stxt').textContent='Sending photo to AI…';
-  document.getElementById('ssub').textContent='This takes a few seconds';
-  const t1=setTimeout(()=>{pb.style.width='30%';document.getElementById('ssub').textContent='Reading ingredients…';},500);
-  const t2=setTimeout(()=>{pb.style.width='65%';document.getElementById('ssub').textContent='Extracting method…';},1400);
-  const b64=dataUrl.split(',')[1], mt=dataUrl.split(';')[0].split(':')[1];
+  document.getElementById('stxt').textContent=`Reading ${scanPages.length} page${scanPages.length>1?'s':''}…`;
+  document.getElementById('ssub').textContent='Sending to AI…';
+
+  // Build content blocks — one image per page
+  const imgBlocks=scanPages.map((dataUrl,i)=>{
+    const b64=dataUrl.split(',')[1], mt=dataUrl.split(';')[0].split(':')[1];
+    return [
+      {type:'text',text:`Page ${i+1} of ${scanPages.length}:`},
+      {type:'image',source:{type:'base64',media_type:mt,data:b64}}
+    ];
+  }).flat();
+
+  const prompt=`You are reading a recipe that spans ${scanPages.length} page${scanPages.length>1?'s':''}.
+Extract the COMPLETE recipe including ALL ingredients and the FULL method from all pages.
+Return ONLY valid JSON with no other text:
+{"name":"","source":"book or website name if visible","cat":"Main course|Starter|Soup|Pudding|Bake|Salad|Snack|Breakfast|Other","time":"total time if shown","ings":["ingredient 1","ingredient 2"],"method":"complete step by step method","notes":"any tips or serving suggestions"}
+Important: include every ingredient and every method step — do not truncate.`;
+
+  const t1=setTimeout(()=>{pb.style.width='30%';document.getElementById('ssub').textContent='Reading ingredients…';},800);
+  const t2=setTimeout(()=>{pb.style.width='60%';document.getElementById('ssub').textContent='Extracting full method…';},2000);
+
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:1500,messages:[{role:'user',content:[
-        {type:'image',source:{type:'base64',media_type:mt,data:b64}},
-        {type:'text',text:'Read this recipe page and return ONLY valid JSON:\n{"name":"","source":"book name if visible","cat":"Main course|Starter|Soup|Pudding|Bake|Salad|Snack|Breakfast|Other","time":"","ings":[],"method":"","notes":""}\nReturn ONLY the JSON, no other text.'}
-      ]}]})
+      body:JSON.stringify({model:'claude-opus-4-5',max_tokens:2500,messages:[{role:'user',content:[...imgBlocks,{type:'text',text:prompt}]}]})
     });
     clearTimeout(t1); clearTimeout(t2); pb.style.width='90%';
     const data=await resp.json();
@@ -1132,17 +1198,22 @@ async function runScan(dataUrl){
     scanData=JSON.parse(txt.replace(/```json|```/g,'').trim());
     pb.style.width='100%';
     setTimeout(()=>{ prog.style.display='none'; showScanResult(); },300);
-  }catch(err){ clearTimeout(t1); clearTimeout(t2); prog.style.display='none'; toast('Could not read recipe: '+err.message); }
+  }catch(err){
+    clearTimeout(t1); clearTimeout(t2);
+    prog.style.display='none';
+    toast('Could not read recipe: '+err.message);
+  }
 }
 
 function showScanResult(){
   document.getElementById('sr-name').textContent=scanData.name||'Unknown';
   document.getElementById('sr-ings').textContent=(scanData.ings||[]).join(', ');
-  document.getElementById('sr-meth').textContent=(scanData.method||'').slice(0,300)+((scanData.method||'').length>300?'…':'');
+  document.getElementById('sr-meth').textContent=(scanData.method||'').slice(0,400)+((scanData.method||'').length>400?'…':'');
   const nw=document.getElementById('sr-nwrap');
   if(scanData.notes){document.getElementById('sr-notes').textContent=scanData.notes;nw.style.display='';}else nw.style.display='none';
   document.getElementById('sres').style.display='block';
 }
+
 function scanTransfer(){
   if(!scanData)return; formTab('manual');
   document.getElementById('fn').value=scanData.name||'';
@@ -1154,7 +1225,15 @@ function scanTransfer(){
   ingList=scanData.ings||[]; renderChips();
   toast('Fields filled — review and save');
 }
-function scanReset(){ document.getElementById('sprev').style.display='none'; document.getElementById('sres').style.display='none'; document.getElementById('sfile').value=''; scanData=null; }
+
+function scanReset(){
+  scanPages=[];
+  renderScanPages();
+  document.getElementById('sres').style.display='none';
+  document.getElementById('sprog').style.display='none';
+  document.getElementById('sfile').value='';
+  scanData=null;
+}
 
 // ── CSV ───────────────────────────────────────────────────
 function exportCSV(){
