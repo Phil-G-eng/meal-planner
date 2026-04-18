@@ -561,15 +561,8 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
 const SB_URL  = 'https://tmgvauikkbqbygxfdhbd.supabase.co';
 const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRtZ3ZhdWlra2JxYnlneGZkaGJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY0MjcyOTksImV4cCI6MjA5MjAwMzI5OX0.I-SBop_ciSN89oIhO_CkCpTfn1F3ZlmO-1-jtmk6WJQ';
 
-// Cookie-based session storage — works in Edge and across browsers
-const cookieStore = {
-  getItem(k){ const m=document.cookie.match(new RegExp('(^| )'+encodeURIComponent(k)+'=([^;]+)')); return m?decodeURIComponent(m[2]):null; },
-  setItem(k,v){ const e=new Date(Date.now()+365*864e5).toUTCString(); document.cookie=encodeURIComponent(k)+'='+encodeURIComponent(v)+'; expires='+e+'; path=/; SameSite=Lax; Secure'; },
-  removeItem(k){ document.cookie=encodeURIComponent(k)+'=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; Secure'; }
-};
-
 const sb = supabase.createClient(SB_URL, SB_KEY, {
-  auth:{ storage:cookieStore, persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, flowType:'implicit' }
+  auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, storageKey:'mp_session' }
 });
 
 // ── Background photos ─────────────────────────────────────
@@ -651,30 +644,41 @@ async function doForgot(){
 }
 
 async function doSignOut(){
-  await sb.auth.signOut();
-  user=null; recipes=[]; meals={};
+  // Prevent double sign-out
+  if(!user) return;
+  user=null;
+  try{ await sb.auth.signOut(); }catch(e){ console.log('signOut error (safe to ignore):',e); }
+  recipes=[]; meals={};
   document.getElementById('app').style.display='none';
   document.getElementById('bnav').style.display='none';
   document.getElementById('auth').style.display='flex';
+  // Clear form fields for clean re-login
+  document.getElementById('li-em').value='';
+  document.getElementById('li-pw').value='';
+  document.getElementById('li-err').textContent='';
 }
 
 // ── Session ───────────────────────────────────────────────
 // Single clean handler — only runs full init on SIGNED_IN / INITIAL_SESSION
 sb.auth.onAuthStateChange(async(event,session)=>{
   if(session?.user){
+    const wasSignedOut = !user;
     user=session.user;
     if(event==='SIGNED_IN'||event==='INITIAL_SESSION'){
       await bootApp();
-    }
-    // TOKEN_REFRESHED and other events: quietly refresh data
-    else if(document.getElementById('app').style.display!=='none'){
+    } else if(document.getElementById('app').style.display!=='none'){
+      // Token refresh — quietly reload data
       await refreshData();
     }
   } else {
-    user=null;
-    document.getElementById('auth').style.display='flex';
-    document.getElementById('app').style.display='none';
-    document.getElementById('bnav').style.display='none';
+    // Only show auth screen if we haven't already handled sign out manually
+    if(user!==null){
+      user=null;
+      recipes=[]; meals={};
+      document.getElementById('app').style.display='none';
+      document.getElementById('bnav').style.display='none';
+      document.getElementById('auth').style.display='flex';
+    }
   }
 });
 
@@ -1243,7 +1247,13 @@ function updateApiUI(){
 }
 
 // ── Modals ────────────────────────────────────────────────
-function openModal(id){ const el=document.getElementById(id); el.classList.add('on'); el.style.pointerEvents='auto'; document.body.style.overflow='hidden'; }
+function openModal(id){
+  const el=document.getElementById(id);
+  el.classList.add('on'); el.style.pointerEvents='auto';
+  document.body.style.overflow='hidden';
+  // Pre-fill API key field when that modal opens
+  if(id==='m-api') document.getElementById('apikey').value=getApiKey();
+}
 function closeModal(id){ const el=document.getElementById(id); el.classList.remove('on'); el.style.pointerEvents='none'; document.body.style.overflow=''; }
 document.addEventListener('click',e=>{ if(e.target.classList.contains('mbg')) closeModal(e.target.id); });
 document.addEventListener('touchend',e=>{ if(e.target.classList.contains('mbg')) closeModal(e.target.id); },{passive:true});
