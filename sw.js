@@ -1,5 +1,5 @@
 // Service Worker v15 — never caches HTML, always fetches fresh
-const CACHE = 'fm-v15';
+const CACHE = 'fm-v16';
 const STATIC = ['./icon-192.png','./icon-512.png','./favicon.png','./manifest.json'];
 
 self.addEventListener('install', e => {
