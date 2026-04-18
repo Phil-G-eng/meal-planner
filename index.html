@@ -616,7 +616,7 @@ function setBg(page){
 }
 
 // ── State ─────────────────────────────────────────────────
-let recipes=[], meals={}, currentUser=null, householdId=null;
+let recipes=[], meals={}, currentUser=null, householdId=null, cachedInviteCode=null;
 let currentPage='today', editingId=null;
 let addStarVal=0, ingList=[], photoData='', scanData=null;
 let calY=new Date().getFullYear(), calM=new Date().getMonth();
@@ -788,6 +788,8 @@ async function renderHouseholdContent(){
     };
     await Promise.race([query(), timeout]);
     if(!hh) throw new Error('no household');
+    cachedInviteCode = hh.invite_code;
+    localStorage.setItem('mp_invite_code', hh.invite_code);
     el.innerHTML=`
       <div style="margin-bottom:1.25rem">
         <div class="modal-section-title">Household</div>
@@ -807,17 +809,15 @@ async function renderHouseholdContent(){
       </div>`;
   } catch(e){
     // Show cached/known values on failure
-    const code = householdId ? '96383af7' : '—';
+    const code = cachedInviteCode || localStorage.getItem('mp_invite_code') || '—';
     el.innerHTML=`
       <div style="background:var(--paper);border-radius:var(--radius);padding:1rem 1.25rem;margin-bottom:1rem">
         <div class="modal-section-title" style="margin-bottom:.5rem">Invite code</div>
         <p style="font-size:32px;font-weight:700;letter-spacing:.18em;color:var(--accent);font-family:'Playfair Display',serif">${code}</p>
         <p style="font-size:12px;color:var(--ink-light);margin-top:6px">Share with family members when they register</p>
       </div>
-      <button class="btn btn-sm" onclick="renderHouseholdContent()" style="margin-bottom:.75rem">↻ Retry</button>
-      <div style="margin-top:.5rem">
-        <button class="btn btn-danger" onclick="closeModal('household-modal');doSignOut()" style="width:100%;justify-content:center">↩ Sign out</button>
-      </div>`;
+      <button class="btn btn-sm" onclick="renderHouseholdContent()" style="margin-bottom:.75rem;display:block;width:100%">↻ Retry loading</button>
+      <button class="btn btn-danger" style="width:100%;justify-content:center;display:block;padding:12px" onclick="signOutFromModal()">↩ Sign out</button>`;
   }
 }
 
@@ -1245,6 +1245,13 @@ function parseCSVRow(row){
   return result;
 }
 
+
+function signOutFromModal(){
+  document.getElementById('household-modal').classList.remove('open');
+  document.getElementById('household-modal').style.pointerEvents='none';
+  document.body.style.overflow='';
+  setTimeout(()=>doSignOut(), 150);
+}
 
 function toggleMoreMenu(){
   const menu=document.getElementById('more-menu');
