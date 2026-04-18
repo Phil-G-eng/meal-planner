@@ -246,27 +246,42 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
   <div class="abox">
     <div class="alogo">Our<br>Family<br>Meals</div>
     <div class="asub">Your kitchen, every device</div>
-    <div class="atabs">
-      <button class="atab on" onclick="authTab('in')" id="at-in">Sign in</button>
-      <button class="atab" onclick="authTab('up')" id="at-up">Create account</button>
-    </div>
-    <div id="ap-in">
-      <div class="af"><label>Email</label><input type="email" id="li-em" placeholder="you@example.com" autocomplete="email"></div>
-      <div class="af"><label>Password</label><input type="password" id="li-pw" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
-      <button class="abtn" onclick="doLogin()" id="li-btn">Sign in</button>
-      <div class="aerr" id="li-err"></div>
-      <button class="alink" onclick="doForgot()">Forgot password?</button>
-    </div>
-    <div id="ap-up" style="display:none">
-      <div class="af"><label>Email</label><input type="email" id="ru-em" placeholder="you@example.com" autocomplete="email"></div>
-      <div class="af"><label>Password</label><input type="password" id="ru-pw" placeholder="At least 6 characters" autocomplete="new-password"></div>
-      <div class="ainvite">
-        <p>Joining an existing household? Enter the invite code — leave blank to create a new one.</p>
-        <input type="text" id="ru-inv" placeholder="Invite code (optional)" style="margin-top:4px">
+
+    <!-- IN USE screen -->
+    <div id="ap-inuse" style="display:none">
+      <div style="background:rgba(192,98,42,.15);border:.5px solid rgba(192,98,42,.4);border-radius:var(--r);padding:1.25rem;margin-bottom:1.25rem;text-align:left">
+        <p style="font-size:14px;color:rgba(255,255,255,.85);font-weight:600;margin-bottom:6px">⚠ App is in use</p>
+        <p style="font-size:13px;color:rgba(255,255,255,.55);line-height:1.6"><span id="inuse-who"></span> is currently signed in.<br>Ask them to sign out first.</p>
       </div>
-      <button class="abtn" onclick="doRegister()" id="ru-btn">Create account</button>
-      <div class="aerr" id="ru-err"></div>
+      <button class="abtn" onclick="checkInUse()" style="background:rgba(255,255,255,.1);margin-bottom:.75rem">↻ Check again</button>
+      <p style="font-size:11px;color:rgba(255,255,255,.3);line-height:1.6">If the app crashed and nobody is signed in, wait 5 minutes for the lock to expire automatically.</p>
     </div>
+
+    <!-- Normal sign in / register -->
+    <div id="ap-normal">
+      <div class="atabs">
+        <button class="atab on" onclick="authTab('in')" id="at-in">Sign in</button>
+        <button class="atab" onclick="authTab('up')" id="at-up">Create account</button>
+      </div>
+      <div id="ap-in">
+        <div class="af"><label>Email</label><input type="email" id="li-em" placeholder="you@example.com" autocomplete="email"></div>
+        <div class="af"><label>Password</label><input type="password" id="li-pw" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <button class="abtn" onclick="doLogin()" id="li-btn">Sign in</button>
+        <div class="aerr" id="li-err"></div>
+        <button class="alink" onclick="doForgot()">Forgot password?</button>
+      </div>
+      <div id="ap-up" style="display:none">
+        <div class="af"><label>Email</label><input type="email" id="ru-em" placeholder="you@example.com" autocomplete="email"></div>
+        <div class="af"><label>Password</label><input type="password" id="ru-pw" placeholder="At least 6 characters" autocomplete="new-password"></div>
+        <div class="ainvite">
+          <p>Joining an existing household? Enter the invite code — leave blank to create a new one.</p>
+          <input type="text" id="ru-inv" placeholder="Invite code (optional)" style="margin-top:4px">
+        </div>
+        <button class="abtn" onclick="doRegister()" id="ru-btn">Create account</button>
+        <div class="aerr" id="ru-err"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -290,7 +305,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
       <button class="s-btn" onclick="openModal('m-api')">⚙ Configure AI key</button>
       <button class="s-btn" onclick="openHousehold()">🏠 Household settings</button>
       <button class="s-btn" onclick="doSignOut()">↩ Sign out</button>
-      <div style="font-size:10px;color:rgba(255,255,255,.18);margin-top:8px;text-align:center">v15 · Our Family Meals</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.18);margin-top:8px;text-align:center">v16 · Our Family Meals</div>
     </div>
   </nav>
   <main class="main">
@@ -446,7 +461,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
   <div class="mmi" onclick="closeMore();openModal('m-api')"><span class="mic">⚙</span>Configure AI key<span id="mm-adot" style="margin-left:auto;width:7px;height:7px;border-radius:50%;background:#555;flex-shrink:0"></span></div>
   <div class="mmi" onclick="closeMore();openHousehold()"><span class="mic">🏠</span>Household settings</div>
   <div class="mmi" onclick="closeMore();doSignOut()" style="color:rgba(255,120,80,.9)"><span class="mic">↩</span>Sign out</div>
-  <div style="padding:8px 1.5rem;font-size:10px;color:rgba(255,255,255,.2)">v15 · Our Family Meals</div>
+  <div style="padding:8px 1.5rem;font-size:10px;color:rgba(255,255,255,.2)">v16 · Our Family Meals</div>
 </div>
 <div class="bnav" id="bnav" style="display:none">
   <div class="bitem on" onclick="nav('today')" id="bn-today"><span class="bi">☀</span>Today</div>
@@ -531,6 +546,7 @@ let calM = new Date().getMonth();
 let calRecipeId = null;
 let modalRecipeId = null;
 let realtimeChannel = null;
+let lockRenewInterval = null;
 
 const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36);
 const todayStr = () => new Date().toISOString().slice(0,10);
@@ -640,7 +656,55 @@ async function doForgot() {
   err.textContent = error ? error.message : 'Reset email sent — check your inbox';
 }
 
-// ─── SESSION HANDLER ──────────────────────────────────────────────────────────
+// ─── SESSION LOCK ─────────────────────────────────────────────────────────────
+// One user at a time. Lock stored in households table.
+// Expires after 5 mins automatically — protects against crash/browser close.
+
+const LOCK_DURATION = 5 * 60 * 1000; // 5 minutes in ms
+
+async function acquireLock(email) {
+  // Check if lock is held by someone else and not expired
+  const { data } = await sb.from('households').select('locked_by, lock_expires').eq('id', householdId).single();
+  if (data && data.locked_by && data.locked_by !== email) {
+    const expires = new Date(data.lock_expires).getTime();
+    if (expires > Date.now()) {
+      return { blocked: true, who: data.locked_by };
+    }
+  }
+  // Acquire / renew lock
+  await sb.from('households').update({
+    locked_by: email,
+    lock_expires: new Date(Date.now() + LOCK_DURATION).toISOString()
+  }).eq('id', householdId);
+  return { blocked: false };
+}
+
+async function releaseLock() {
+  if (!householdId) return;
+  await sb.from('households').update({ locked_by: null, lock_expires: null }).eq('id', householdId);
+}
+
+async function renewLock() {
+  // Called periodically to keep the lock alive while user is active
+  if (!householdId || !user) return;
+  await sb.from('households').update({
+    lock_expires: new Date(Date.now() + LOCK_DURATION).toISOString()
+  }).eq('id', householdId);
+}
+
+async function checkInUse() {
+  const { data } = await sb.from('households').select('locked_by, lock_expires').eq('id', householdId).single();
+  if (!data || !data.locked_by || new Date(data.lock_expires).getTime() <= Date.now()) {
+    // Lock has expired or cleared — show normal sign in
+    document.getElementById('ap-inuse').style.display = 'none';
+    document.getElementById('ap-normal').style.display = '';
+  } else {
+    document.getElementById('inuse-who').textContent = data.locked_by;
+    toast('Still in use — please wait');
+  }
+}
+
+
 // One clear rule: TOKEN_REFRESHED is always ignored.
 // Session present + not booted = boot.
 // Session present + booted + app visible = refresh data.
@@ -663,23 +727,25 @@ sb.auth.onAuthStateChange(async (event, session) => {
 
 function resetToAuth() {
   isBooted = false;
-  user = null;
-  recipes = [];
-  meals = {};
-  householdId = null;
+  user = null; recipes = []; meals = {}; householdId = null;
+  if (lockRenewInterval) { clearInterval(lockRenewInterval); lockRenewInterval = null; }
   if (realtimeChannel) { try { sb.removeChannel(realtimeChannel); } catch(e){} realtimeChannel = null; }
   document.getElementById('app').style.display  = 'none';
   document.getElementById('bnav').style.display = 'none';
   document.getElementById('auth').style.display = 'flex';
+  document.getElementById('ap-inuse').style.display  = 'none';
+  document.getElementById('ap-normal').style.display = '';
   document.getElementById('li-em').value  = '';
   document.getElementById('li-pw').value  = '';
   document.getElementById('li-err').textContent = '';
 }
 
 async function doSignOut() {
-  if (!isBooted) return;          // already signed out — ignore
-  isBooted = false;               // block re-entry before any await
-  resetToAuth();                  // show auth immediately
+  if (!isBooted) return;
+  isBooted = false;
+  if (lockRenewInterval) { clearInterval(lockRenewInterval); lockRenewInterval = null; }
+  await releaseLock();
+  resetToAuth();
   try { await sb.auth.signOut({ scope:'local' }); } catch(e) { console.log('signOut:', e.message); }
 }
 
@@ -703,13 +769,31 @@ async function bootApp() {
     if (!householdId) householdId = await createHousehold();
   }
 
+  // Check session lock — block if another user is active
+  if (householdId) {
+    const lock = await acquireLock(user.email);
+    if (lock.blocked) {
+      // Another user is signed in — back to auth, show blocked screen
+      isBooted = false;
+      document.getElementById('app').style.display  = 'none';
+      document.getElementById('bnav').style.display = 'none';
+      document.getElementById('auth').style.display = 'flex';
+      document.getElementById('ap-inuse').style.display = '';
+      document.getElementById('ap-normal').style.display = 'none';
+      document.getElementById('inuse-who').textContent = lock.who;
+      await sb.auth.signOut({ scope:'local' });
+      return;
+    }
+    // Renew lock every 2 minutes while app is open
+    lockRenewInterval = setInterval(renewLock, 2 * 60 * 1000);
+  }
+
   await refreshData();
   startRealtime();
 
-  // Refresh when tab becomes visible
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && isBooted) refreshData();
-  }, { once:false });
+  });
 }
 
 async function refreshData() {
