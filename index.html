@@ -332,7 +332,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
       <button class="s-btn" onclick="openModal('m-api')">⚙ Configure AI key</button>
       <button class="s-btn" onclick="openHousehold()">🏠 Household settings</button>
       <button class="s-btn" onclick="doSignOut()">↩ Sign out</button>
-      <div style="font-size:10px;color:rgba(255,255,255,.18);margin-top:6px;text-align:center">v8 · Our Family Meals</div>
+      <div style="font-size:10px;color:rgba(255,255,255,.18);margin-top:6px;text-align:center">v9 · Our Family Meals</div>
     </div>
   </nav>
 
@@ -496,7 +496,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
   <div class="mmi" onclick="closeMore();openModal('m-api')"><span class="mic">⚙</span>Configure AI key<span id="mm-adot" style="margin-left:auto;width:7px;height:7px;border-radius:50%;background:#555;flex-shrink:0"></span></div>
   <div class="mmi" onclick="closeMore();openHousehold()"><span class="mic">🏠</span>Household settings</div>
   <div class="mmi" onclick="closeMore();doSignOut()" style="color:rgba(255,120,80,.9)"><span class="mic">↩</span>Sign out</div>
-  <div style="padding:8px 1.5rem;font-size:10px;color:rgba(255,255,255,.2)">v8 · Our Family Meals</div>
+  <div style="padding:8px 1.5rem;font-size:10px;color:rgba(255,255,255,.2)">v9 · Our Family Meals</div>
 </div>
 <div class="bnav" id="bnav" style="display:none">
   <div class="bitem on" onclick="nav('today')" id="bn-today"><span class="bi">☀</span>Today</div>
@@ -646,42 +646,53 @@ async function doForgot(){
   err.textContent=error?error.message:'Reset email sent — check your inbox';
 }
 
-// ── Auth state — bulletproof single handler ───────────────
-// isBooted is the single source of truth.
-// TOKEN_REFRESHED is ignored — session is fine, no action needed.
-// SIGNED_IN / INITIAL_SESSION → boot if not already booted.
-// SIGNED_OUT → show auth if currently booted.
-// All other events with session → refresh data only if app is showing.
+// ── Auth state handler ────────────────────────────────────
+// Simple rules:
+//  - Session exists + not booted = boot the app
+//  - Session exists + booted = refresh data silently
+//  - No session + booted = show auth screen
+//  - No session + not booted = do nothing (we handled it manually)
+//  - TOKEN_REFRESHED = always ignore
 sb.auth.onAuthStateChange(async(event, session)=>{
   if(event==='TOKEN_REFRESHED') return;
   if(session?.user){
+    user=session.user;
     if(!isBooted){
-      user=session.user;
       await bootApp();
     } else if(document.getElementById('app').style.display!=='none'){
       await refreshData();
     }
   } else {
-    if(isBooted) _showAuth();
+    // Session gone - show auth if app was showing
+    if(document.getElementById('app').style.display!=='none'){
+      _resetToAuth();
+    }
   }
 });
 
-// Internal: show auth screen and reset state
-function _showAuth(){
-  isBooted=false; user=null; recipes=[]; meals={};
+function _resetToAuth(){
+  isBooted=false;
+  user=null;
+  recipes=[];
+  meals={};
   householdId=null;
   document.getElementById('app').style.display='none';
   document.getElementById('bnav').style.display='none';
   document.getElementById('auth').style.display='flex';
-  try{ document.getElementById('li-em').value=''; document.getElementById('li-pw').value=''; document.getElementById('li-err').textContent=''; }catch(e){}
+  try{
+    document.getElementById('li-em').value='';
+    document.getElementById('li-pw').value='';
+    document.getElementById('li-err').textContent='';
+  }catch(e){}
 }
 
-// Public sign out — sets isBooted=false immediately so handler ignores the event
 async function doSignOut(){
-  if(!isBooted) return; // already signed out — ignore repeat calls
+  if(!isBooted) return;
   isBooted=false;
-  _showAuth();
-  try{ await sb.auth.signOut(); }catch(e){ console.log('signOut:',e.message); }
+  // Clean up realtime channel
+  if(realtimeChannel){ sb.removeChannel(realtimeChannel); realtimeChannel=null; }
+  _resetToAuth();
+  try{ await sb.auth.signOut({scope:'local'}); }catch(e){ console.log('signOut:',e.message); }
 }
 
 async function bootApp(){
@@ -841,8 +852,11 @@ async function deleteMeal(date){
 }
 
 // ── Real-time ─────────────────────────────────────────────
+let realtimeChannel=null;
 function startRealtime(){
-  sb.channel('family')
+  // Remove any existing channel before creating a new one
+  if(realtimeChannel){ sb.removeChannel(realtimeChannel); realtimeChannel=null; }
+  realtimeChannel=sb.channel('family')
     .on('postgres_changes',{event:'*',schema:'public',table:'recipes'},async()=>{
       await loadRecipes(); renderPage();
     })
