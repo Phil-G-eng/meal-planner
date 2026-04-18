@@ -1,7 +1,7 @@
 // ── Service Worker v11 ─────────────────────────────────────
 // NEVER caches index.html — always fetches fresh from network.
 // Only caches static assets (icons, fonts, images).
-const CACHE = 'family-meals-v12';
+const CACHE = 'family-meals-v13';
 const STATIC = ['./icon-192.png','./icon-512.png','./favicon.png','./manifest.json'];
 
 self.addEventListener('install', e=>{
