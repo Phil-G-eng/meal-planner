@@ -332,6 +332,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
       <button class="s-btn" onclick="openModal('m-api')">⚙ Configure AI key</button>
       <button class="s-btn" onclick="openHousehold()">🏠 Household settings</button>
       <button class="s-btn" onclick="doSignOut()">↩ Sign out</button>
+      <div style="font-size:10px;color:rgba(255,255,255,.18);margin-top:6px;text-align:center">v8 · Our Family Meals</div>
     </div>
   </nav>
 
@@ -495,6 +496,7 @@ body{font-family:'DM Sans',sans-serif;background:#1a1612;color:var(--ink);font-w
   <div class="mmi" onclick="closeMore();openModal('m-api')"><span class="mic">⚙</span>Configure AI key<span id="mm-adot" style="margin-left:auto;width:7px;height:7px;border-radius:50%;background:#555;flex-shrink:0"></span></div>
   <div class="mmi" onclick="closeMore();openHousehold()"><span class="mic">🏠</span>Household settings</div>
   <div class="mmi" onclick="closeMore();doSignOut()" style="color:rgba(255,120,80,.9)"><span class="mic">↩</span>Sign out</div>
+  <div style="padding:8px 1.5rem;font-size:10px;color:rgba(255,255,255,.2)">v8 · Our Family Meals</div>
 </div>
 <div class="bnav" id="bnav" style="display:none">
   <div class="bitem on" onclick="nav('today')" id="bn-today"><span class="bi">☀</span>Today</div>
@@ -586,7 +588,8 @@ function setBg(page){
 
 // ── App state ─────────────────────────────────────────────
 let user=null, householdId=null, inviteCode=null;
-let recipes=[], meals={};
+let isBooted=false;
+let recipes=[], meals=[];
 let page='today', editId=null;
 let starVal=0, ingList=[], photo='', scanData=null;
 let calY=new Date().getFullYear(), calM=new Date().getMonth();
@@ -643,54 +646,52 @@ async function doForgot(){
   err.textContent=error?error.message:'Reset email sent — check your inbox';
 }
 
-async function doSignOut(){
-  // Prevent double sign-out
-  if(!user) return;
-  user=null;
-  try{ await sb.auth.signOut(); }catch(e){ console.log('signOut error (safe to ignore):',e); }
-  recipes=[]; meals={};
-  document.getElementById('app').style.display='none';
-  document.getElementById('bnav').style.display='none';
-  document.getElementById('auth').style.display='flex';
-  // Clear form fields for clean re-login
-  document.getElementById('li-em').value='';
-  document.getElementById('li-pw').value='';
-  document.getElementById('li-err').textContent='';
-}
-
-// ── Session ───────────────────────────────────────────────
-// Single clean handler — only runs full init on SIGNED_IN / INITIAL_SESSION
-sb.auth.onAuthStateChange(async(event,session)=>{
+// ── Auth state — bulletproof single handler ───────────────
+// isBooted is the single source of truth.
+// TOKEN_REFRESHED is ignored — session is fine, no action needed.
+// SIGNED_IN / INITIAL_SESSION → boot if not already booted.
+// SIGNED_OUT → show auth if currently booted.
+// All other events with session → refresh data only if app is showing.
+sb.auth.onAuthStateChange(async(event, session)=>{
+  if(event==='TOKEN_REFRESHED') return;
   if(session?.user){
-    const wasSignedOut = !user;
-    user=session.user;
-    if(event==='SIGNED_IN'||event==='INITIAL_SESSION'){
+    if(!isBooted){
+      user=session.user;
       await bootApp();
     } else if(document.getElementById('app').style.display!=='none'){
-      // Token refresh — quietly reload data
       await refreshData();
     }
   } else {
-    // Only show auth screen if we haven't already handled sign out manually
-    if(user!==null){
-      user=null;
-      recipes=[]; meals={};
-      document.getElementById('app').style.display='none';
-      document.getElementById('bnav').style.display='none';
-      document.getElementById('auth').style.display='flex';
-    }
+    if(isBooted) _showAuth();
   }
 });
 
+// Internal: show auth screen and reset state
+function _showAuth(){
+  isBooted=false; user=null; recipes=[]; meals={};
+  householdId=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('bnav').style.display='none';
+  document.getElementById('auth').style.display='flex';
+  try{ document.getElementById('li-em').value=''; document.getElementById('li-pw').value=''; document.getElementById('li-err').textContent=''; }catch(e){}
+}
+
+// Public sign out — sets isBooted=false immediately so handler ignores the event
+async function doSignOut(){
+  if(!isBooted) return; // already signed out — ignore repeat calls
+  isBooted=false;
+  _showAuth();
+  try{ await sb.auth.signOut(); }catch(e){ console.log('signOut:',e.message); }
+}
+
 async function bootApp(){
+  isBooted=true;
   document.getElementById('auth').style.display='none';
   document.getElementById('app').style.display='flex';
   document.getElementById('bnav').style.display='flex';
   document.getElementById('s-email').textContent=user.email;
-  updateApiUI();
-  setBg('today');
+  updateApiUI(); setBg('today');
 
-  // Handle pending invite from registration
   const pendingInv=localStorage.getItem('mp_inv');
   if(pendingInv){
     localStorage.removeItem('mp_inv');
@@ -701,7 +702,6 @@ async function bootApp(){
   }
 
   await refreshData();
-  renderToday();
   startRealtime();
 }
 
@@ -709,6 +709,11 @@ async function refreshData(){
   await Promise.all([loadRecipes(), loadMeals()]);
   renderPage();
 }
+
+// Refresh data whenever the tab becomes visible again
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible' && isBooted) refreshData();
+});
 
 // ── Household ─────────────────────────────────────────────
 async function loadHousehold(){
@@ -845,11 +850,6 @@ function startRealtime(){
       await loadMeals(); renderPage();
     })
     .subscribe();
-
-  // Refresh when tab becomes visible again
-  document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState==='visible'&&user) refreshData();
-  });
 }
 
 // ── Navigation ────────────────────────────────────────────
